@@ -19,6 +19,7 @@ app.use('/photos', express.static(path.join(__dirname, 'public/photos'), {
 
 app.get('/photos', (req, res) => {
   const folderPath = path.join(__dirname, 'public/photos');
+  console.log(folderPath);
 
   fs.readdir(folderPath, (err, files) => {
     if (err) {
