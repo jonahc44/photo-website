@@ -73,7 +73,7 @@ const fetchPhotos = async () => {
 }
 
 const Photos = () => {
-  const { status, data, error } = useQuery({
+  const { status, data: photos, error } = useQuery({
     queryKey: ['photos'],
     queryFn: fetchPhotos
   })
@@ -86,9 +86,15 @@ const Photos = () => {
     return <div>Error: {error.message}</div>
   }
 
-  return data.map((val: string, ind: number) => (
-    <img key={ind} src={`../../images/${val}`} className='w-5/6'></img>
-  ));
+  return (
+    <div className="grid gap-14 justify-items-center h-full w-5/6 auto-rows-min last:pb-20">
+      {photos.map((url: string, index: string) => (
+        <a key={index} href={url} target="_blank" rel="noopener noreferrer">
+          <img src={url} alt={`Image ${index + 1}`} className="max-h-screen" />
+        </a>
+      ))}
+    </div>
+  );
 }
 
 const OpenMenu: React.FC<HeaderProps> = ({handleClick, isHidden, isClicked}: HeaderProps) => {

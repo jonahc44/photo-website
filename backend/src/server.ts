@@ -18,6 +18,8 @@ app.use(cors({
     origin: 'http://localhost:3000'
 }))
 
+app.use('/photos', express.static(path.join(__dirname, 'public/photos')));
+
 app.get('/', (req, res) => {
     res.send('Hello World!');
   });
@@ -50,22 +52,23 @@ app.listen(PORT, () => {
     console.log(`Express server running on http://localhost:${PORT}`);
   });
 
-  app.get('/photos', (req, res) => {
-    const folderPath = path.join(__dirname, '../../frontend/images');
-  
-    fs.readdir(folderPath, (err, files) => {
-      if (err) {
-        console.log(err.message);
-        return res.status(500).json({ error: 'Unable to scan directory' });
-      }
+app.get('/photos', (req, res) => {
+  const folderPath = path.join(__dirname, 'public/photos');
 
-      res.json(files);
-    });
+  fs.readdir(folderPath, (err, files) => {
+    if (err) {
+      console.log(err.message);
+      return res.status(500).json({ error: 'Unable to scan directory' });
+    }
+
+    const photoUrls = files.map(file => `${req.protocol}://${req.get('host')}/photos/${file}`);
+    res.json(photoUrls);
   });
-  
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 // async function getAccessToken() : Promise<string> {
 //   const client =  process.env.AUTH_KEY as string;
