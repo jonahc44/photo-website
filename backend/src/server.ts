@@ -11,15 +11,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
-app.use('/photos', express.static(path.join(__dirname, 'public/photos'), {
+app.use('/photos', express.static(path.join(__dirname, 'public/photos').replace('dist', 'src'), {
   setHeaders: function(res, path) {
     res.set("Content-Security-Policy", "default-srd 'self'")
   }
 }));
 
 app.get('/photos', (req, res) => {
-  const folderPath = path.join(__dirname, 'public/photos');
-  console.log(folderPath);
+  const folderPath = path.join(__dirname, 'public/photos').replace('dist', 'src');
 
   fs.readdir(folderPath, (err, files) => {
     if (err) {
