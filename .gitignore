@@ -5,4 +5,3 @@ dist-ssr
 build
 *.local
 *.env
-photos
