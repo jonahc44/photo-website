@@ -1,5 +1,6 @@
 import express from 'express'
 import https from 'https'
+import http from 'http'
 import axios from 'axios'
 import crypto from 'crypto'
 import dotenv from 'dotenv'
@@ -17,6 +18,7 @@ import * as admin from 'firebase-admin'
 // import { Storage } from '@google-cloud/storage'
 import { getRenditions } from './adobe_utils/GetRenditions'
 import * as adobeSession from './adobe_utils/SessionManager'
+import { AddressInfo } from 'net';
 
 dotenv.config();
 const sqliteConstructor = sqlite(session);
@@ -54,15 +56,16 @@ const secrets = JSON.parse(process.env.SECRETS as string);
 
 if (!admin.apps.length){
     if (process.env.ENV == 'dev') {
-        const serviceAccount = JSON.parse(fs.readFileSync(path.join(__dirname, './serviceAccountKey.json'), 'utf8'));
-        admin.initializeApp({
-            // apiKey: process.env.FIREBASE_KEY,
-            projectId: process.env.FIREBASE_ID,
-            storageBucket: process.env.FIREBASE_BUCKET,
-            credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
-        });
+      console.log('Operating in dev environment');
+      const serviceAccount = JSON.parse(fs.readFileSync(path.join(__dirname, './serviceAccountKey.json'), 'utf8'));
+      admin.initializeApp({
+          // apiKey: process.env.FIREBASE_KEY,
+          projectId: process.env.FIREBASE_ID,
+          storageBucket: process.env.FIREBASE_BUCKET,
+          credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
+      });
     } else {
-        admin.initializeApp({});
+      admin.initializeApp({});
     }
 }
 
@@ -98,13 +101,18 @@ app.use(cors({
 // app.use(express.json());
 // app.use(subdomain('api', router));
 
-// const server = https.createServer({
-//   key: fs.readFileSync(path.join(__dirname, "localhost-key.pem")),
-//   cert: fs.readFileSync(path.join(__dirname, "localhost.pem")),
-// }, app);
+if (process.env.ENV == 'dev') {
+  console.log('Operating in dev environment');
+  https.createServer({
+    key: fs.readFileSync(path.join(__dirname, "localhost-key.pem")),
+    cert: fs.readFileSync(path.join(__dirname, "localhost.pem")),
+  }, app);
+}
 
-app.listen(PORT, () => {
-  console.log(`App listening on https://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  const address = server.address() as AddressInfo;
+  if (!address) return;
+  console.log(`App listening on ${address.address}:${PORT}`);
 })
 
 // app.use('/photos', express.static(path.join(__dirname, 'public/photos').replace('dist', 'src'), {
@@ -215,31 +223,31 @@ app.get('/callback', async (req, res) => {
   }
 })
 
-app.get('/get-albums', async (req, res) => {
-  if (req.session.auth == 0) return console.error('Unautorized user');
-  const token = await adobeSession.apiToken();
-  if (token == 'error') return console.error('No api token');
-  const config = fs.readFileSync(path.join(__dirname, 'photo_config.json'), 'utf-8');
-  const jsonConfig = JSON.parse(config);
+// app.get('/get-albums', async (req, res) => {
+//   if (req.session.auth == 0) return console.error('Unautorized user');
+//   const token = await adobeSession.apiToken();
+//   if (token == 'error') return console.error('No api token');
+//   const config = fs.readFileSync(path.join(__dirname, 'photo_config.json'), 'utf-8');
+//   const jsonConfig = JSON.parse(config);
   
-  res.json(jsonConfig.albums);
-});
+//   res.json(jsonConfig.albums);
+// });
 
-app.put('/album-click/:id', async (req, res) => {
-  const key = req.params.id;
-  const configPath = path.join(__dirname, 'photo_config.json');
-  const config = fs.readFileSync(configPath, 'utf-8');
-  const jsonConfig = JSON.parse(config); 
+// app.put('/album-click/:id', async (req, res) => {
+//   const key = req.params.id;
+//   const configPath = path.join(__dirname, 'photo_config.json');
+//   const config = fs.readFileSync(configPath, 'utf-8');
+//   const jsonConfig = JSON.parse(config); 
 
-  if (!(key in jsonConfig.albums)) {
-    res.status(400).send('Cannot add new album');
-    return;
-  }
+//   if (!(key in jsonConfig.albums)) {
+//     res.status(400).send('Cannot add new album');
+//     return;
+//   }
 
-  jsonConfig.albums[key].selected = !jsonConfig.albums[key].selected;
-  fs.writeFileSync(configPath, JSON.stringify(jsonConfig, null, 2));
-  res.json(jsonConfig.albums);
-});
+//   jsonConfig.albums[key].selected = !jsonConfig.albums[key].selected;
+//   fs.writeFileSync(configPath, JSON.stringify(jsonConfig, null, 2));
+//   res.json(jsonConfig.albums);
+// });
 
 app.use('/photos', express.static(path.join(__dirname, 'public/photos').replace('dist', 'src'), {
   setHeaders: function(res, path) {
