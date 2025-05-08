@@ -21,7 +21,7 @@ import * as adobeSession from './adobe_utils/SessionManager'
 import { AddressInfo } from 'net';
 
 dotenv.config();
-const sqliteConstructor = sqlite(session);
+// const sqliteConstructor = sqlite(session);
 
 declare module 'express-session' {
   interface SessionData {
@@ -84,10 +84,10 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: 'lax'
   },
-  store: new sqliteConstructor({
-    db: 'sessions.db',
-    table: 'sessions'
-  }) as session.Store
+  // store: new sqliteConstructor({
+  //   db: 'sessions.db',
+  //   table: 'sessions'
+  // }) as session.Store
 }))
 // app.use(passport.initialize());
 // app.use(passport.session());
@@ -101,13 +101,13 @@ app.use(cors({
 // app.use(express.json());
 // app.use(subdomain('api', router));
 
-if (process.env.ENV == 'dev') {
-  console.log('Operating in dev environment');
-  https.createServer({
-    key: fs.readFileSync(path.join(__dirname, "localhost-key.pem")),
-    cert: fs.readFileSync(path.join(__dirname, "localhost.pem")),
-  }, app);
-}
+// if (process.env.ENV == 'dev') {
+//   console.log('Operating in dev environment');
+//   https.createServer({
+//     key: fs.readFileSync(path.join(__dirname, "localhost-key.pem")),
+//     cert: fs.readFileSync(path.join(__dirname, "localhost.pem")),
+//   }, app);
+// }
 
 const server = app.listen(PORT, () => {
   const address = server.address() as AddressInfo;
