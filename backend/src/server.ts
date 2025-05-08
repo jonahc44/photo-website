@@ -10,11 +10,11 @@ import cors from 'cors'
 import session from 'express-session'
 import subdomain from 'express-subdomain'
 import sqlite from 'connect-sqlite3'
-import { initializeApp } from 'firebase/app'
+// import { initializeApp } from 'firebase/app'
 import * as admin from 'firebase-admin'
-import serviceAccount from './serviceAccountKey.json'
-import { getAnalytics } from "firebase/analytics"
-import { Storage } from '@google-cloud/storage'
+// import serviceAccount from './serviceAccountKey.json'
+// import { getAnalytics } from "firebase/analytics"
+// import { Storage } from '@google-cloud/storage'
 import { getRenditions } from './adobe_utils/GetRenditions'
 import * as adobeSession from './adobe_utils/SessionManager'
 
@@ -50,24 +50,30 @@ interface UserResponse {
   email: string,
 }
 
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_KEY,
-  projectId: process.env.FIREBASE_ID,
-  storageBucket: process.env.FIREBASE_BUCKET,
-  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
-};
+const secrets = JSON.parse(process.env.SECRETS as string);
 
-if (!admin.apps.length)
-  admin.initializeApp(firebaseConfig);
+if (!admin.apps.length){
+    if (process.env.ENV == 'dev') {
+        const serviceAccount = JSON.parse(fs.readFileSync(path.join(__dirname, './serviceAccountKey.json'), 'utf8'));
+        admin.initializeApp({
+            // apiKey: process.env.FIREBASE_KEY,
+            projectId: process.env.FIREBASE_ID,
+            storageBucket: process.env.FIREBASE_BUCKET,
+            credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
+        });
+    } else {
+        admin.initializeApp({});
+    }
+}
 
-const bucket = admin.storage().bucket();
+// const bucket = admin.storage().bucket();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 // const router = express.Router();
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || '',
+  secret: secrets.session_secret || '',
   resave: false,
   saveUninitialized: false,
   cookie: { 
@@ -99,7 +105,6 @@ const server = https.createServer({
 
 server.listen(PORT, () => {
   console.log(`App listening on https://localhost:${PORT}`);
-  
 })
 
 // app.use('/photos', express.static(path.join(__dirname, 'public/photos').replace('dist', 'src'), {
@@ -114,8 +119,8 @@ app.get('/auth', (req, res) => {
   req.session.state = state;
 
   const params = qs.stringify({
-    client_id: process.env.ADOBE_ID,
-    redirect_uri: process.env.REDIRECT_URI,
+    client_id: secrets.adobe_id,
+    redirect_uri: 'localhost:5000/callback',
     response_type: 'code',
     scope: 'lr_partner_apis,offline_access,AdobeID,openid,lr_partner_rendition_apis',
     state: state
@@ -152,12 +157,12 @@ app.get('/callback', async (req, res) => {
 
   try {
     const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
-    const authString = Buffer.from(`${process.env.ADOBE_ID}:${process.env.ADOBE_SECRET}`).toString('base64');
+    const authString = Buffer.from(`${secrets.adobe_id}:${secrets.adobe_secret}`).toString('base64');
     const params = qs.stringify({
       code: code as string,
       grant_type: 'authorization_code',
-      client_id: process.env.ADOBE_ID,
-      client_secret: process.env.ADOBE_SECRET
+      client_id: secrets.adobe_id,
+      client_secret: secrets.adobe_secret
     });
     
     const response = await axios.post<TokenResponse>(tokenUrl, params, {
@@ -171,7 +176,7 @@ app.get('/callback', async (req, res) => {
     const refreshToken = response.data.refresh_token;
     const expiryTime = response.data.expires_in;
     
-    const userUrl = `https://ims-na1.adobelogin.com/ims/userinfo/v2?client_id=${process.env.ADOBE_ID}`;
+    const userUrl = `https://ims-na1.adobelogin.com/ims/userinfo/v2?client_id=${secrets.adobe_id}`;
     const userInfo = await axios.get<UserResponse>(userUrl, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -180,7 +185,7 @@ app.get('/callback', async (req, res) => {
 
     const userId = userInfo.data.sub;
 
-    if (userId != process.env.ADMIN_ID) {
+    if (userId != secrets.admin_id) {
       const revokeUrl = 'https://ims-na1.adobelogin.com/ims/revoke';
       await axios.post(revokeUrl, `token=${accessToken}`, {
         headers: {

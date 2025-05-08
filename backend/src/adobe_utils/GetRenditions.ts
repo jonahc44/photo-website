@@ -3,8 +3,7 @@ import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
 import * as admin from 'firebase-admin'
-import { Bucket } from '@google-cloud/storage'
-import serviceAccount from '../serviceAccountKey.json'
+// import serviceAccount from '../serviceAccountKey.json'
 dotenv.config();
 
 interface Album {
@@ -19,15 +18,21 @@ interface Album {
 }
 
 export const getRenditions = async (token: string) => {
-    const firebaseConfig = {
-        apiKey: process.env.FIREBASE_KEY,
-        projectId: process.env.FIREBASE_ID,
-        storageBucket: process.env.FIREBASE_BUCKET,
-        credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
-    };
+    const secrets = JSON.parse(process.env.SECRETS as string);
     
-    if (!admin.apps.length)
-    admin.initializeApp(firebaseConfig);
+    if (!admin.apps.length){
+        if (process.env.ENV == 'dev') {
+            const serviceAccount = JSON.parse(fs.readFileSync(path.join(__dirname, '../serviceAccountKey.json'), 'utf8'));
+            admin.initializeApp({
+                // apiKey: process.env.FIREBASE_KEY,
+                projectId: process.env.FIREBASE_ID,
+                storageBucket: process.env.FIREBASE_BUCKET,
+                credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
+            });
+        } else {
+            admin.initializeApp({});
+        }
+    }
     
     const bucket = admin.storage().bucket();
     const config = fs.readFileSync(path.join(__dirname, '../photo_config.json'), 'utf-8');
@@ -61,7 +66,7 @@ export const getRenditions = async (token: string) => {
                     const response = await axios.get(`${baseUrl}${href}/renditions/2048`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
-                            'X-API-Key': process.env.ADOBE_ID,
+                            'X-API-Key': secrets.adobe_id,
                             'Accept': 'image/jpeg',
                             'Cache-Control': 'max-age=1800000'
                         },
