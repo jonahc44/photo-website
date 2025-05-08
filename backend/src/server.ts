@@ -69,7 +69,7 @@ if (!admin.apps.length){
 // const bucket = admin.storage().bucket();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 // const router = express.Router();
 
 app.use(session({
@@ -120,7 +120,7 @@ app.get('/auth', (req, res) => {
 
   const params = qs.stringify({
     client_id: secrets.adobe_id,
-    redirect_uri: 'localhost:5000/callback',
+    redirect_uri: process.env.REDIRECT,
     response_type: 'code',
     scope: 'lr_partner_apis,offline_access,AdobeID,openid,lr_partner_rendition_apis',
     state: state
