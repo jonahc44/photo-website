@@ -9,4 +9,4 @@ runConfig:
 
 env:
   - variable: SECRETS
-    secret: SECRETS@latest
+    secret: SECRETS
