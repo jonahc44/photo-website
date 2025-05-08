@@ -98,12 +98,12 @@ app.use(cors({
 // app.use(express.json());
 // app.use(subdomain('api', router));
 
-const server = https.createServer({
-  key: fs.readFileSync(path.join(__dirname, "localhost-key.pem")),
-  cert: fs.readFileSync(path.join(__dirname, "localhost.pem")),
-}, app);
+// const server = https.createServer({
+//   key: fs.readFileSync(path.join(__dirname, "localhost-key.pem")),
+//   cert: fs.readFileSync(path.join(__dirname, "localhost.pem")),
+// }, app);
 
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`App listening on https://localhost:${PORT}`);
 })
 
