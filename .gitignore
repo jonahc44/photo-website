@@ -5,3 +5,8 @@ dist-ssr
 build
 *.local
 *.env
+*.pem
+*.db
+photo_config.json
+photos
+serviceAccountKey.json
