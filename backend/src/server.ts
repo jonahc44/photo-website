@@ -208,6 +208,7 @@ app.get('/callback', async (req, res) => {
 
     if (state != req.session.state) {
       res.send('Error, different session');
+      console.error(state, ' vs ', req.session.state);
       return;
     }
 
