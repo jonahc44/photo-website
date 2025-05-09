@@ -91,7 +91,15 @@ app.use(session({
 }))
 // app.use(passport.initialize());
 // app.use(passport.session());
-app.use(cors());
+app.use(cors({
+  credentials: true,
+  origin: [
+    'http://localhost:4000',
+    'http://localhost:3000',
+    'https://localhost:4000',
+    'https://localhost:3000'
+  ]
+}));
 // app.use(express.json());
 // app.use(subdomain('api', router));
 
