@@ -91,23 +91,17 @@ app.use(session({
 }))
 // app.use(passport.initialize());
 // app.use(passport.session());
-app.use(cors({
-  credentials: true,
-  origin: [
-    'http://localhost:4000',
-    'http://localhost:3000'
-  ]
-}));
+app.use(cors());
 // app.use(express.json());
 // app.use(subdomain('api', router));
 
-// if (process.env.ENV == 'dev') {
-//   console.log('Operating in dev environment');
-//   https.createServer({
-//     key: fs.readFileSync(path.join(__dirname, "localhost-key.pem")),
-//     cert: fs.readFileSync(path.join(__dirname, "localhost.pem")),
-//   }, app);
-// }
+if (process.env.ENV == 'dev') {
+  console.log('Operating in dev environment');
+  https.createServer({
+    key: fs.readFileSync(path.join(__dirname, "localhost-key.pem")),
+    cert: fs.readFileSync(path.join(__dirname, "localhost.pem")),
+  }, app);
+}
 
 const server = app.listen(PORT, () => {
   const address = server.address() as AddressInfo;
@@ -215,7 +209,7 @@ app.get('/callback', async (req, res) => {
     //   return;
     // }
 
-    adobeSession.createSession(accessToken, refreshToken, expiryTime)    
+    adobeSession.createSession(accessToken, refreshToken, expiryTime);
     req.session.auth = 1;
     req.session.save;
     res.redirect('http://localhost:4000/');

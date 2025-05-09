@@ -19,7 +19,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^4.1.5",
-    "tanstack-query": "^1.0.0"
+    "tanstack-query": "^1.0.0",
+    "vite-plugin-mkcert": "^1.17.8"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
