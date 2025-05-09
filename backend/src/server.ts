@@ -21,7 +21,7 @@ import * as adobeSession from './adobe_utils/SessionManager'
 import { AddressInfo } from 'net';
 
 dotenv.config();
-// const sqliteConstructor = sqlite(session);
+const sqliteConstructor = sqlite(session);
 
 declare module 'express-session' {
   interface SessionData {
@@ -84,10 +84,10 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: 'lax'
   },
-  // store: new sqliteConstructor({
-  //   db: 'sessions.db',
-  //   table: 'sessions'
-  // }) as session.Store
+  store: new sqliteConstructor({
+    db: 'sessions.db',
+    table: 'sessions'
+  }) as session.Store
 }))
 // app.use(passport.initialize());
 // app.use(passport.session());
@@ -166,7 +166,6 @@ app.get('/callback', async (req, res) => {
   try {
     const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
     const authString = Buffer.from(`${secrets.adobe_id}:${secrets.adobe_secret}`).toString('base64');
-    console.log(secrets.adobe_id);
     const params = qs.stringify({
       code: code as string,
       grant_type: 'authorization_code',
