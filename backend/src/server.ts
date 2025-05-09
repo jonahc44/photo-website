@@ -125,7 +125,7 @@ app.get('/auth', (req, res) => {
   const authUrl = 'https://ims-na1.adobelogin.com/ims/authorize/v2?';
   const state = crypto.randomBytes(16).toString('hex');
   req.session.state = state;
-  console.log(req.sessionID);
+  // console.log(req.sessionID);
 
   const params = qs.stringify({
     client_id: secrets.adobe_id,
@@ -207,13 +207,13 @@ app.get('/callback', async (req, res) => {
       return;
     }
     
-    console.log(req.sessionID);
+    // console.log(req.sessionID);
 
-    if (state != req.session.state) {
-      res.send('Error, different session');
-      console.error(state, ' vs ', req.session.state);
-      return;
-    }
+    // if (state != req.session.state) {
+    //   res.send('Error, different session');
+    //   console.error(state, ' vs ', req.session.state);
+    //   return;
+    // }
 
     adobeSession.createSession(accessToken, refreshToken, expiryTime)    
     req.session.auth = 1;
