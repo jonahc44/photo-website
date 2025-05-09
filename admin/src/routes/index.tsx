@@ -17,7 +17,7 @@ interface Album {
 export const Route = createFileRoute('/')({
   component: Index,
   beforeLoad: async ({ location }) => {
-    const status = await fetch('https://localhost:5000/auth-status', {
+    const status = await fetch('https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/auth-status', {
       method: 'GET',
       credentials: 'include'
     })
@@ -39,7 +39,7 @@ export const Route = createFileRoute('/')({
 })
 
 const fetchAlbums = async () => {
-  const response = await fetch('https://localhost:5000/get-albums');
+  const response = await fetch('https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/get-albums');
 
   if (!response.ok) {
     throw new Error('Network response was not ok');
@@ -56,7 +56,7 @@ const fetchAlbums = async () => {
 }
 
 const updateAlbum = async (key: string) => {
-  const response = await fetch(`https://localhost:5000/album-click/${key}`, {
+  const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/album-click/${key}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json'
@@ -108,7 +108,7 @@ const Albums = () => {
 
 const logout = async () => {
   console.log('clicked');
-  await fetch('https://localhost:5000/logout', {
+  await fetch('https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/logout', {
     method: 'POST'
   });
 

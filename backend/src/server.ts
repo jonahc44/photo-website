@@ -166,6 +166,7 @@ app.get('/callback', async (req, res) => {
   try {
     const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
     const authString = Buffer.from(`${secrets.adobe_id}:${secrets.adobe_secret}`).toString('base64');
+    console.log(secrets.adobe_id);
     const params = qs.stringify({
       code: code as string,
       grant_type: 'authorization_code',
@@ -218,7 +219,7 @@ app.get('/callback', async (req, res) => {
     req.session.save;
     res.redirect('http://localhost:4000/');
   } catch (error: any) {
-    console.log('Error getting tokens: ', error.response);
+    console.error('Error getting tokens: ', error.response);
     res.send('Error retrieving access token');
   }
 })
@@ -249,11 +250,11 @@ app.get('/callback', async (req, res) => {
 //   res.json(jsonConfig.albums);
 // });
 
-app.use('/photos', express.static(path.join(__dirname, 'public/photos').replace('dist', 'src'), {
-  setHeaders: function(res, path) {
-    res.set("Content-Security-Policy", "default-srd 'self'")
-  }
-}));
+// app.use('/photos', express.static(path.join(__dirname, 'public/photos').replace('dist', 'src'), {
+//   setHeaders: function(res, path) {
+//     res.set("Content-Security-Policy", "default-srd 'self'")
+//   }
+// }));
 
 app.get('/photos', async (req, res) => {
   if (req.session.auth == 0) return console.error('Unautorized user');
