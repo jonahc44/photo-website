@@ -36,12 +36,12 @@ interface RefreshRes {
 export const createSession = async (apiToken: string, refreshToken: string, expiresIn: number, db: Firestore) => {
     console.log('Adding tokens');
 
-    db.collection('tokens').doc('token_info').update({
+    db.collection('tokens').doc('token_info').set({
         api_token: apiToken,
         refresh_token: refreshToken,
         expires_in: expiresIn,
         last_refreshed: Date.now()
-    });
+    }, {merge: true});
     
     // db.serialize(() => {
     //     db.run(`CREATE TABLE IF NOT EXISTS tokens (
