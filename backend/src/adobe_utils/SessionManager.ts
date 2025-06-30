@@ -1,7 +1,9 @@
 import sqlite3 from 'sqlite3'
 import dotenv from 'dotenv'
 import axios from 'axios'
-const db = new sqlite3.Database('./tokens.db');
+import { Firestore } from 'firebase-admin/firestore';
+
+// const db = new sqlite3.Database('./tokens.db');
 dotenv.config();
 
 interface DbRow {
@@ -31,43 +33,48 @@ interface RefreshRes {
 //     }));
 // }
 
-export const createSession = async (apiToken: string, refreshToken: string, expiresIn: number) => {
+export const createSession = async (apiToken: string, refreshToken: string, expiresIn: number, db: Firestore) => {
     console.log('Adding tokens');
-    db.serialize(() => {
-        db.run(`CREATE TABLE IF NOT EXISTS tokens (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          
-          api_token TEXT NOT NULL,
-          refresh_token TEXT NOT NULL,
-          expires_in INTEGER NOT NULL,
-          last_refreshed DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
-    });
 
-    const stmt = db.prepare(`REPLACE into tokens (api_token, refresh_token, expires_in) VALUES (?, ?, ?)`);
-    stmt.run(apiToken, refreshToken, expiresIn, function (err: any) {
-        if (err) {
-          return console.error('Error inserting tokens:', err.message);
-        }
-        console.log('Tokens stored');
+    db.collection('tokens').doc('token_info').update({
+        api_token: apiToken,
+        refresh_token: refreshToken,
+        expires_in: expiresIn,
+        last_refreshed: Date.now()
     });
-    stmt.finalize();
+    
+    // db.serialize(() => {
+    //     db.run(`CREATE TABLE IF NOT EXISTS tokens (
+    //       id INTEGER PRIMARY KEY AUTOINCREMENT,
+          
+    //       api_token TEXT NOT NULL,
+    //       refresh_token TEXT NOT NULL,
+    //       expires_in INTEGER NOT NULL,
+    //       last_refreshed DATETIME DEFAULT CURRENT_TIMESTAMP
+    //     )`);
+    // });
+
+    // const stmt = db.prepare(`REPLACE into tokens (api_token, refresh_token, expires_in) VALUES (?, ?, ?)`);
+    // stmt.run(apiToken, refreshToken, expiresIn, function (err: any) {
+    //     if (err) {
+    //       return console.error('Error inserting tokens:', err.message);
+    //     }
+    //     console.log('Tokens stored');
+    // });
+    // stmt.finalize();
     // db.close();
 }
 
-export const refreshApiToken = () => {
-    db.get<DbRow>(`SELECT api_token, refresh_token, expires_in, last_refreshed FROM tokens ORDER BY last_refreshed DESC LIMIT 1`, (err, row) => {
-        if (err || !row) {
-          return console.error('No tokens found or error retrieving tokens.');
-        }
+export const refreshApiToken = async (db: Firestore) => {
+    const tokenInfo = await db.collection('tokens').doc('token_info').get()
+    const expiryTime = new Date(tokenInfo.get('last_refreshed')).getTime() + tokenInfo.get('expires_in') * 1000;
+    const currTime = Date.now();
 
-        const currTime = Date.now();
-        const expiryTime = new Date(row.last_refreshed).getTime() + row.expires_in * 1000;
-        if(currTime >= expiryTime) {
+    if (currTime >= expiryTime) {
             const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
             const authString = Buffer.from(`${process.env.ADOBE_ID}:${process.env.ADOBE_SECRET}`).toString('base64');
 
-            axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${row.refresh_token}`, {
+            axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${tokenInfo.get('refresh_token')}`, {
                 headers: {
                     'Authorization': `Basic ${authString}`,
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -76,34 +83,66 @@ export const refreshApiToken = () => {
                 const newAccess = response.data.access_token;
                 const newRefresh = response.data.refresh_token;
                 const newExpiry = response.data.expires_in;
-                const stmt = db.prepare(`REPLACE into tokens (api_token, refresh_token, expires_in) VALUES (?, ?, ?)`);
 
-                stmt.run(newAccess, newRefresh, newExpiry, function (err: any) {
-                    if (err) {
-                      return console.error('Error inserting tokens:', err.message);
-                    }
-                    console.log('Tokens stored');
-                  });
-                  stmt.finalize();
+                db.collection('tokens').doc('token_info').update({
+                    api_token: newAccess,
+                    refresh_token: newRefresh,
+                    expires_in: newExpiry,
+                    last_refreshed: Date.now()
+                });
             })
         }
-    });
+
+    // db.get<DbRow>(`SELECT api_token, refresh_token, expires_in, last_refreshed FROM tokens ORDER BY last_refreshed DESC LIMIT 1`, (err, row) => {
+    //     if (err || !row) {
+    //       return console.error('No tokens found or error retrieving tokens.');
+    //     }
+
+    //     const currTime = Date.now();
+    //     const expiryTime = new Date(row.last_refreshed).getTime() + row.expires_in * 1000;
+    //     if (currTime >= expiryTime) {
+    //         const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
+    //         const authString = Buffer.from(`${process.env.ADOBE_ID}:${process.env.ADOBE_SECRET}`).toString('base64');
+
+    //         axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${row.refresh_token}`, {
+    //             headers: {
+    //                 'Authorization': `Basic ${authString}`,
+    //                 'Content-Type': 'application/x-www-form-urlencoded'
+    //             }
+    //         }).then(response => {
+    //             const newAccess = response.data.access_token;
+    //             const newRefresh = response.data.refresh_token;
+    //             const newExpiry = response.data.expires_in;
+    //             const stmt = db.prepare(`REPLACE into tokens (api_token, refresh_token, expires_in) VALUES (?, ?, ?)`);
+
+    //             stmt.run(newAccess, newRefresh, newExpiry, function (err: any) {
+    //                 if (err) {
+    //                   return console.error('Error inserting tokens:', err.message);
+    //                 }
+    //                 console.log('Tokens stored');
+    //               });
+    //               stmt.finalize();
+    //         })
+    //     }
+    // });
     // db.close();
 }
 
-export const apiToken = () => {
-    refreshApiToken();
+export const apiToken = async (db: Firestore) => {
+    refreshApiToken(db);
 
-    return new Promise<string>((resolve, reject) =>
-        db.get<DbRow>(`SELECT api_token, refresh_token, expires_in, last_refreshed FROM tokens ORDER BY last_refreshed DESC LIMIT 1`, (err, row) => {
-            if (err || !row) {
-                resolve('error');
-                return console.error('No tokens found or error retrieving tokens.');
-            }
+    const tokenInfo = await db.collection('tokens').doc('token_info').get();
+    return tokenInfo.get('api_token');
+    // return new Promise<string>((resolve, reject) =>
+    //     db.get<DbRow>(`SELECT api_token, refresh_token, expires_in, last_refreshed FROM tokens ORDER BY last_refreshed DESC LIMIT 1`, (err, row) => {
+    //         if (err || !row) {
+    //             resolve('error');
+    //             return console.error('No tokens found or error retrieving tokens.');
+    //         }
             
-            resolve(row.api_token);
-        }
-    ));
+    //         resolve(row.api_token);
+    //     }
+    // ));
 }
 
 // export const logout = () => {
@@ -117,11 +156,11 @@ export const apiToken = () => {
 //     })
 // }
 
-process.on('SIGTERM', () => {
-    db.close((err) => {
-        if (err) {
-            return console.error('Error closing the database:', err.message);
-        }
-        console.log('Database connection closed.');
-    });
-})
+// process.on('SIGTERM', () => {
+//     db.close((err) => {
+//         if (err) {
+//             return console.error('Error closing the database:', err.message);
+//         }
+//         console.log('Database connection closed.');
+//     });
+// })

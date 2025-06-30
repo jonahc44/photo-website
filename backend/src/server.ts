@@ -217,10 +217,10 @@ app.get('/callback', async (req, res) => {
     //   return;
     // }
 
-    adobeSession.createSession(accessToken, refreshToken, expiryTime);
+    adobeSession.createSession(accessToken, refreshToken, expiryTime, admin.firestore());
     req.session.auth = 1;
     req.session.save;
-    res.redirect('http://localhost:4000/');
+    res.redirect('https://localhost:4000/');
   } catch (error: any) {
     console.error('Error getting tokens: ', error.response);
     res.send('Error retrieving access token');
@@ -261,7 +261,7 @@ app.get('/callback', async (req, res) => {
 
 app.get('/photos', async (req, res) => {
   if (req.session.auth == 0) return console.error('Unautorized user');
-  const token = await adobeSession.apiToken();
+  const token = await adobeSession.apiToken(admin.firestore());
   if (token == 'error') return console.error('No api token');
   // await getAssets(token);
   
