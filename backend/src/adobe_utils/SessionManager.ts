@@ -36,12 +36,12 @@ interface RefreshRes {
 export const createSession = async (apiToken: string, refreshToken: string, expiresIn: number, db: Firestore) => {
     console.log('Adding tokens');
 
-    db.collection('tokens').doc('token_info').set({
-        api_token: apiToken,
-        refresh_token: refreshToken,
-        expires_in: expiresIn,
-        last_refreshed: Date.now()
-    }, {merge: true});
+    db.collection('tokens').doc('api_token').set({
+        value: apiToken,
+        expiration: Date.now() + expiresIn * 1000
+    });
+
+    db.collection('tokens').doc('refresh_token').set({value: refreshToken});
     
     // db.serialize(() => {
     //     db.run(`CREATE TABLE IF NOT EXISTS tokens (
@@ -66,15 +66,16 @@ export const createSession = async (apiToken: string, refreshToken: string, expi
 }
 
 export const refreshApiToken = async (db: Firestore) => {
-    const tokenInfo = await db.collection('tokens').doc('token_info').get()
-    const expiryTime = new Date(tokenInfo.get('last_refreshed')).getTime() + tokenInfo.get('expires_in') * 1000;
+    const apiToken = await db.collection('tokens').doc('api_token').get();
+    const refreshToken = (await db.collection('tokens').doc('refresh_token').get()).get('value');
+    const expiryTime = apiToken.get('expiration');
     const currTime = Date.now();
 
     if (currTime >= expiryTime) {
             const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
             const authString = Buffer.from(`${process.env.ADOBE_ID}:${process.env.ADOBE_SECRET}`).toString('base64');
 
-            axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${tokenInfo.get('refresh_token')}`, {
+            axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${refreshToken}`, {
                 headers: {
                     'Authorization': `Basic ${authString}`,
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -131,8 +132,8 @@ export const refreshApiToken = async (db: Firestore) => {
 export const apiToken = async (db: Firestore) => {
     refreshApiToken(db);
 
-    const tokenInfo = await db.collection('tokens').doc('token_info').get();
-    return tokenInfo.get('api_token');
+    const tokenInfo = await db.collection('tokens').doc('api_token').get();
+    return tokenInfo.get('value');
     // return new Promise<string>((resolve, reject) =>
     //     db.get<DbRow>(`SELECT api_token, refresh_token, expires_in, last_refreshed FROM tokens ORDER BY last_refreshed DESC LIMIT 1`, (err, row) => {
     //         if (err || !row) {
