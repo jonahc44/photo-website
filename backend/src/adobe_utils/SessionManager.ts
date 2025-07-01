@@ -2,6 +2,7 @@ import sqlite3 from 'sqlite3'
 import dotenv from 'dotenv'
 import axios from 'axios'
 import { Firestore } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase/firestore'
 
 // const db = new sqlite3.Database('./tokens.db');
 dotenv.config();
@@ -36,12 +37,12 @@ interface RefreshRes {
 export const createSession = async (apiToken: string, refreshToken: string, expiresIn: number, db: Firestore) => {
     console.log('Adding tokens');
 
-    db.collection('tokens').doc('api_token').set({
+    await db.collection('tokens').doc('api_token').set({
         value: apiToken,
-        expiration: Date.now() + expiresIn * 1000
+        expiration: Timestamp.fromMillis(Date.now() + expiresIn * 1000)
     });
 
-    db.collection('tokens').doc('refresh_token').set({value: refreshToken});
+    await db.collection('tokens').doc('refresh_token').set({value: refreshToken});
     
     // db.serialize(() => {
     //     db.run(`CREATE TABLE IF NOT EXISTS tokens (
