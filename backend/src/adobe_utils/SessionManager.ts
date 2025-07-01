@@ -1,8 +1,7 @@
 import sqlite3 from 'sqlite3'
 import dotenv from 'dotenv'
 import axios from 'axios'
-import { Firestore } from 'firebase-admin/firestore';
-import { Timestamp } from 'firebase/firestore'
+import { Firestore, Timestamp } from 'firebase-admin/firestore';
 
 // const db = new sqlite3.Database('./tokens.db');
 dotenv.config();
