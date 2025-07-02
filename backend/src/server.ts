@@ -10,9 +10,9 @@ import path from 'path'
 import cors from 'cors'
 import session from 'express-session'
 import subdomain from 'express-subdomain'
-import sqlite from 'connect-sqlite3'
 // import { initializeApp } from 'firebase/app'
 import * as admin from 'firebase-admin'
+import { FirestoreStore } from '@google-cloud/connect-firestore'
 // import serviceAccount from './serviceAccountKey.json'
 // import { getAnalytics } from "firebase/analytics"
 // import { Storage } from '@google-cloud/storage'
@@ -21,7 +21,6 @@ import * as adobeSession from './adobe_utils/SessionManager'
 import { AddressInfo } from 'net';
 
 dotenv.config();
-const sqliteConstructor = sqlite(session);
 
 declare module 'express-session' {
   interface SessionData {
@@ -69,6 +68,8 @@ if (!admin.apps.length){
     }
 }
 
+const db = admin.firestore();
+
 // const bucket = admin.storage().bucket();
 
 const app = express();
@@ -84,10 +85,10 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: 'lax'
   },
-  store: new sqliteConstructor({
-    db: 'sessions.db',
-    table: 'sessions'
-  }) as session.Store
+  store: new FirestoreStore({
+    dataset: db,
+    kind: 'express-session'
+  })
 }))
 // app.use(passport.initialize());
 // app.use(passport.session());
@@ -218,7 +219,7 @@ app.get('/callback', async (req, res) => {
     //   return;
     // }
 
-    adobeSession.createSession(accessToken, refreshToken, expiryTime, admin.firestore());
+    adobeSession.createSession(accessToken, refreshToken, expiryTime, db);
     req.session.auth = 1;
     req.session.save;
     res.redirect('https://localhost:4000/');
@@ -262,7 +263,7 @@ app.get('/callback', async (req, res) => {
 
 app.get('/photos', async (req, res) => {
   if (req.session.auth == 0) return console.error('Unautorized user');
-  const token = await adobeSession.apiToken(admin.firestore());
+  const token = await adobeSession.apiToken(db);
   if (token == 'error') return console.error('No api token');
   // await getAssets(token);
   
