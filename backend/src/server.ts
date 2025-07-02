@@ -76,22 +76,6 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 // const router = express.Router();
 
-app.use(session({
-  secret: secrets.session_secret || '',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: 'lax'
-  },
-  store: new FirestoreStore({
-    dataset: db,
-    kind: 'express-session'
-  })
-}))
-// app.use(passport.initialize());
-// app.use(passport.session());
 app.use(cors({
   credentials: true,
   origin: [
@@ -102,6 +86,25 @@ app.use(cors({
     'https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app'
   ]
 }));
+
+app.use(session({
+  secret: secrets.session_secret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true, 
+    secure: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    sameSite: 'none'
+  },
+  store: new FirestoreStore({
+    dataset: db,
+    kind: 'express-session'
+  })
+}))
+// app.use(passport.initialize());
+// app.use(passport.session());
+
 // app.use(express.json());
 // app.use(subdomain('api', router));
 
