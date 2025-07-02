@@ -36,12 +36,18 @@ interface RefreshRes {
 export const createSession = async (apiToken: string, refreshToken: string, expiresIn: number, db: Firestore) => {
     console.log('Adding tokens');
 
-    await db.collection('tokens').doc('api_token').set({
-        value: apiToken,
-        expiration: Timestamp.fromMillis(Date.now() + expiresIn * 1000)
-    });
+    try {
+        await db.collection('tokens').doc('api_token').set({
+            value: apiToken,
+            expiration: Timestamp.fromMillis(Date.now() + expiresIn * 1000)
+        });
 
-    await db.collection('tokens').doc('refresh_token').set({value: refreshToken});
+        await db.collection('tokens').doc('refresh_token').set({value: refreshToken});
+    } catch (err) {
+        console.error(`Error storing ${apiToken} and ${refreshToken}:\n${err}`);
+        throw new Error('Failed to store api tokens');
+    }
+    
     
     // db.serialize(() => {
     //     db.run(`CREATE TABLE IF NOT EXISTS tokens (

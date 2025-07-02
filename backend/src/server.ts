@@ -97,7 +97,8 @@ app.use(cors({
     'http://localhost:4000',
     'http://localhost:3000',
     'https://localhost:4000',
-    'https://localhost:3000'
+    'https://localhost:3000',
+    'https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app'
   ]
 }));
 // app.use(express.json());
