@@ -64,7 +64,7 @@ if (!admin.apps.length){
           credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
       });
     } else {
-      admin.initializeApp({});
+      admin.initializeApp();
     }
 }
 
