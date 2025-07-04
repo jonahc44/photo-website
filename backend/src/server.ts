@@ -141,7 +141,7 @@ app.get('/auth', (req, res) => {
     scope: 'lr_partner_apis,offline_access,AdobeID,openid,lr_partner_rendition_apis',
     state: state
   });
-  req.session.save;
+  req.session.save();
   res.redirect(`${authUrl}${params}`);
 })
 
@@ -155,7 +155,9 @@ app.get('/auth-status', (req, res) => {
 })
 
 app.post('/logout', (req, res) => {
-  req.session.destroy;
+  req.session.destroy(function(err) {
+    console.log('Destroying session');
+  });
 })
 
 app.get('/callback', async (req, res) => {
