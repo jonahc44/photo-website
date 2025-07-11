@@ -95,9 +95,9 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true, 
-    secure: true,
+    secure: process.env.ENV !== 'dev',
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: 'none'
+    sameSite: process.env.ENV === 'dev' ? 'lax' : 'none'
   },
   store: new FirestoreStore({
     dataset: db,
@@ -228,8 +228,9 @@ app.get('/callback', async (req, res) => {
 
     adobeSession.createSession(accessToken, refreshToken, expiryTime, db);
     req.session.auth = 1;
-    req.session.save;
-    res.redirect('https://localhost:4000/');
+    req.session.save(() => {
+      res.redirect('https://localhost:4000/');
+    });
   } catch (error: any) {
     console.error('Error getting tokens: ', error.response);
     res.send('Error retrieving access token');
