@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { Response } from 'express'
 import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
@@ -12,12 +13,13 @@ interface Album {
     selected: boolean,
     photos: {
         [key: string]: {
-            href: string
+            href: string,
+            index: number
         }
     }
 }
 
-export const getRenditions = async (token: string) => {
+export const fetchRenditions = async (token: string, db: admin.firestore.Firestore) => {
     const secrets = JSON.parse(process.env.SECRETS as string);
     
     if (!admin.apps.length){
@@ -46,83 +48,75 @@ export const getRenditions = async (token: string) => {
         if (album.selected) {
             const keys = Object.keys(album.photos);
             const photos = album.photos;
-            for (var i = 0; i < keys.length; i++) {
-                const href = photos[keys[i]].href;
 
-                // try {
-                //     await axios.post(`${baseUrl}${href}/renditions`, '', {
-                //         headers: {
-                //             'X-API-Key': `${process.env.ADOBE_ID}`,
-                //             'Authorization': `Bearer ${token}`,
-                //             'X-Generate-Renditions': 'fullsize'
-                //         }
-                //     })
-                // } catch (err) {
-                //     console.log('Error creating fullsize rendition');
-                //     console.log(err);
-                // }
-
+            const fetchAll = async (key: string) => {
+                const href = photos[key].href;
                 try {
-                    const response = await axios.get(`${baseUrl}${href}/renditions/2048`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'X-API-Key': secrets.adobe_id,
-                            'Accept': 'image/jpeg',
-                            'Cache-Control': 'max-age=1800000'
-                        },
-                        responseType: 'arraybuffer'
-                    });
-                    const binaryData = await response.data as ArrayBuffer;
-                    // const baseData = Buffer.from(binaryData).toString('base64');
-                    const filename = `${keys[i]}.jpg`;
+                    const filename = `${key}.jpg`;
+                    const file = bucket.file(`photos/${filename}`);
+                    const [exists] = await file.exists();
 
-                    try {
-                        const file = bucket.file(`photos/${filename}`);
-                        const writeStream = file.createWriteStream({
-                            metadata: {
-                                contentType: 'image/jpeg'
+                    if (!exists) {
+                        const response = await axios.get(`${baseUrl}${href}/renditions/2048`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'X-API-Key': secrets.adobe_id,
+                                'Accept': 'image/jpeg',
+                                'Cache-Control': 'max-age=1800000'
                             },
-                            resumable: false
+                            responseType: 'arraybuffer'
                         });
 
-                        writeStream.on('error', (err) => {
-                            console.error('Error when uploading photo:', err);
+                        const binaryData = await response.data as ArrayBuffer;
+                        try {
+                            const writeStream = file.createWriteStream({
+                                metadata: {
+                                    contentType: 'image/jpeg'
+                                },
+                                resumable: false
+                            });
+
+                            writeStream.on('error', (err) => {
+                                console.error('Error when uploading photo:', err);
+                            });
+
+                            writeStream.on('finish', async () => {
+                                try {
+                                    const [url] = await file.getSignedUrl({
+                                        action: 'read',
+                                        expires: '03-09-2400'
+                                    });
+
+                                    await db.collection('photo_metadata').doc(filename).set({
+                                        url: url,
+                                        index: photos[key].index
+                                    });
+                                    allData.push(url);
+                                } catch (err) {
+                                    console.error('Could not get signed url:', err);
+                                }
+                            });
+
+                            writeStream.end(binaryData);
+                        } catch (err) {
+                            console.error('Error uploading images: ', err);
+                        }
+                    } else {
+                        const metadata = await db.collection('photo_metadata').doc(filename).get();
+                        const url = await metadata.get('url');
+                        const index = await metadata.get('index');
+                        allData.push({
+                            url: url,
+                            index: index
                         });
-
-                        writeStream.on('finish', async () => {
-                            // console.log('Image uploaded');
-                            try {
-                                const [url] = await file.getSignedUrl({
-                                    action: 'read',
-                                    expires: '03-09-2400'
-                                });
-
-                                allData.push(url);
-                            } catch (err) {
-                                console.error('Could not get signed url:', err);
-                            }
-                        });
-
-                        writeStream.end(binaryData);
-                    } catch (err) {
-                        console.error('Error uploading images: ', err);
                     }
-
-                    // const imagesDirectory = path.join(__dirname, '../public/photos');
-                    // fs.writeFile(path.join(imagesDirectory, filename), binaryData, (err) => {
-                    //     if (err) {
-                    //       console.error('Error saving the image:', err);
-                    //     } else {
-                    //       console.log('Image saved successfully:', filename);
-                    //     }
-                    //   });
-                    // allData.push(`gs://${process.env.BUCKET_NAME}/photos/${filename}`);
                 } catch (err) {
                     console.error('Error fetching image:', err);
                 }
             }
+
+            await Promise.all(keys.map(key => fetchAll(key)));
         }
     }
-
     return allData;
 }

@@ -22,6 +22,7 @@ interface Album {
     photos: {
         [key: string]: {
             href: string,
+            index: number
         }
     }
 }
@@ -31,10 +32,12 @@ interface AssetRes {
 };
 
 export const getAssets = async (token: string) => {
+    const secrets = JSON.parse(process.env.SECRETS as string);
     const config = fs.readFileSync(path.join(__dirname, '../photo_config.json'), 'utf-8');
     const jsonConfig = JSON.parse(config);
     const catHref = jsonConfig.href;
     const baseUrl = `https://lr.adobe.io/v2/${catHref}/`;
+    let numPhotos = jsonConfig.total_photos;
     
     for (const albumKey in jsonConfig.albums) {
         const album = jsonConfig.albums[albumKey] as Album;
@@ -43,7 +46,7 @@ export const getAssets = async (token: string) => {
 
             const response = await axios.get<string>(url, {
                 headers: {
-                    'X-API-Key': `${process.env.ADOBE_ID}`,
+                    'X-API-Key': `${secrets.adobe_id}`,
                     'Authorization': `Bearer ${token}`
                 }
             });
@@ -56,35 +59,39 @@ export const getAssets = async (token: string) => {
                 const key = `asset_${asset.id}`;
 
                 if (!(key in album.photos)) {
-                    try {
-                        await axios.head<string>(`${baseUrl}${asset.links.self.href}/renditions/fullsize`, {
-                            headers: {
-                                'X-API-Key': `${process.env.ADOBE_ID}`,
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
-                    } catch (err) {
-                        try {
-                            await axios.post(`${baseUrl}${asset.links.self.href}/renditions`, '', {
-                                headers: {
-                                    'X-API-Key': `${process.env.ADOBE_ID}`,
-                                    'Authorization': `Bearer ${token}`,
-                                    'X-Generate-Renditions': 'fullsize'
-                                }
-                            })
-                        } catch (err2) {
-                            console.log('Error creating fullsize rendition');
-                            console.log(err2);
-                        }
-                    }
+                    // try {
+                    //     await axios.head<string>(`${baseUrl}${asset.links.self.href}/renditions/fullsize`, {
+                    //         headers: {
+                    //             'X-API-Key': `${process.env.ADOBE_ID}`,
+                    //             'Authorization': `Bearer ${token}`
+                    //         }
+                    //     });
+                    // } catch (err) {
+                    //     try {
+                    //         await axios.post(`${baseUrl}${asset.links.self.href}/renditions`, '', {
+                    //             headers: {
+                    //                 'X-API-Key': `${process.env.ADOBE_ID}`,
+                    //                 'Authorization': `Bearer ${token}`,
+                    //                 'X-Generate-Renditions': 'fullsize'
+                    //             }
+                    //         })
+                    //     } catch (err2) {
+                    //         console.log('Error creating fullsize rendition');
+                    //         console.log(err2);
+                    //     }
+                    // }
 
                     album.photos[key] = {
                         href: asset.links.self.href,
+                        index: numPhotos
                     }
+                    numPhotos++;
                 }
             }
         }
     }
+
+    jsonConfig.total_photos = numPhotos;
 
     try {
         const file = path.join(__dirname, '../photo_config.json');

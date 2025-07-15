@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { Request, Response } from 'express'
 import https from 'https'
 import http from 'http'
 import axios from 'axios'
@@ -10,13 +10,11 @@ import path from 'path'
 import cors from 'cors'
 import session from 'express-session'
 import subdomain from 'express-subdomain'
-// import { initializeApp } from 'firebase/app'
 import * as admin from 'firebase-admin'
 import { FirestoreStore } from '@google-cloud/connect-firestore'
-// import serviceAccount from './serviceAccountKey.json'
-// import { getAnalytics } from "firebase/analytics"
-// import { Storage } from '@google-cloud/storage'
-import { getRenditions } from './adobe_utils/GetRenditions'
+import { fetchRenditions } from './adobe_utils/GetRenditions'
+import { getAlbums } from './adobe_utils/GetAlbums'
+import { getAssets } from './adobe_utils/GetAssets'
 import * as adobeSession from './adobe_utils/SessionManager'
 import { AddressInfo } from 'net';
 
@@ -52,6 +50,23 @@ interface UserResponse {
 }
 
 const secrets = JSON.parse(process.env.SECRETS as string);
+
+async function decodeToken(req: Request, res: Response) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ isAuthenticated: false, message: 'No authentication token provided.' });
+    return false;
+  }
+
+  const idToken = authHeader.split('Bearer ')[1];
+  try {
+    await admin.auth().verifyIdToken(idToken);
+    return true;
+  } catch (err) {
+    res.status(401).json({ isAuthenticated: false, message: 'Invalid or expired authentication token.' });
+    return false;
+  }
+}
 
 if (!admin.apps.length){
     if (process.env.ENV == 'dev') {
@@ -95,40 +110,31 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true, 
-    secure: process.env.ENV !== 'dev',
+    secure: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: process.env.ENV === 'dev' ? 'lax' : 'none'
+    sameSite: 'none'
   },
   store: new FirestoreStore({
     dataset: db,
     kind: 'express-session'
   })
 }))
-// app.use(passport.initialize());
-// app.use(passport.session());
-
-// app.use(express.json());
-// app.use(subdomain('api', router));
 
 if (process.env.ENV == 'dev') {
   console.log('Operating in dev environment');
   https.createServer({
     key: fs.readFileSync(path.join(__dirname, "localhost-key.pem")),
     cert: fs.readFileSync(path.join(__dirname, "localhost.pem")),
-  }, app);
-}
-
-const server = app.listen(PORT, () => {
+  }, app).listen(PORT, () => {
+    console.log(`Listening securely on port ${PORT}`);
+  });
+} else {
+  const server = app.listen(PORT, () => {
   const address = server.address() as AddressInfo;
   if (!address) return;
-  console.log(`App listening on ${address.address}:${PORT}`);
-})
-
-// app.use('/photos', express.static(path.join(__dirname, 'public/photos').replace('dist', 'src'), {
-//   setHeaders: function(res, path) {
-//     res.set("Content-Security-Policy", "default-srd 'self'")
-//   }
-// }));
+    console.log(`App listening on ${address.address}:${PORT}`);
+  })
+}
 
 app.get('/auth', (req, res) => {
   const authUrl = 'https://ims-na1.adobelogin.com/ims/authorize/v2?';
@@ -147,20 +153,22 @@ app.get('/auth', (req, res) => {
   res.redirect(`${authUrl}${params}`);
 })
 
-app.get('/auth-status', (req, res) => {
-  if (!req.session.auth) {
-    res.send(0);
-    return;
+app.get('/auth-status', async (req, res) => {
+  const auth = await decodeToken(req, res);
+
+  if (auth) {
+    res.status(200).json({
+      isAuthenticated: true,
+      message: 'User is authenticated.'
+    });
   }
-
-  res.send(req.session.auth);
 })
 
-app.post('/logout', (req, res) => {
-  req.session.destroy(function(err) {
-    console.log('Destroying session');
-  });
-})
+// app.post('/logout', (req, res) => {
+//   req.session.destroy(function(err) {
+//     console.log('Destroying session');
+//   });
+// })
 
 app.get('/callback', async (req, res) => {
   const { code, state, error } = req.query;
@@ -217,89 +225,79 @@ app.get('/callback', async (req, res) => {
       res.send('Wrong user, please try again');
       return;
     }
-    
-    // console.log(req.sessionID);
 
-    // if (state != req.session.state) {
-    //   res.send('Error, different session');
-    //   console.error(state, ' vs ', req.session.state);
-    //   return;
-    // }
+    try {
+      const firebaseCustomToken = await admin.auth().createCustomToken(userId, {
+        source: 'adobe_api'
+      });
 
-    adobeSession.createSession(accessToken, refreshToken, expiryTime, db);
-    req.session.auth = 1;
-    req.session.save(() => {
-      res.redirect('https://localhost:4000/');
-    });
+      console.log(`Successfully minted Firebase custom token for Adobe user`);
+      adobeSession.createSession(accessToken, refreshToken, expiryTime, db);
+      res.redirect(`https://localhost:4000/#token=${firebaseCustomToken}`);
+      // res.header({ firebaseCustomToken });
+    } catch (error: any) {
+      console.error('Error minting Firebase custom token:', error.message);
+    }
   } catch (error: any) {
     console.error('Error getting tokens: ', error.response);
     res.send('Error retrieving access token');
   }
 })
 
-// app.get('/get-albums', async (req, res) => {
-//   if (req.session.auth == 0) return console.error('Unautorized user');
-//   const token = await adobeSession.apiToken();
-//   if (token == 'error') return console.error('No api token');
-//   const config = fs.readFileSync(path.join(__dirname, 'photo_config.json'), 'utf-8');
-//   const jsonConfig = JSON.parse(config);
-  
-//   res.json(jsonConfig.albums);
-// });
-
-// app.put('/album-click/:id', async (req, res) => {
-//   const key = req.params.id;
-//   const configPath = path.join(__dirname, 'photo_config.json');
-//   const config = fs.readFileSync(configPath, 'utf-8');
-//   const jsonConfig = JSON.parse(config); 
-
-//   if (!(key in jsonConfig.albums)) {
-//     res.status(400).send('Cannot add new album');
-//     return;
-//   }
-
-//   jsonConfig.albums[key].selected = !jsonConfig.albums[key].selected;
-//   fs.writeFileSync(configPath, JSON.stringify(jsonConfig, null, 2));
-//   res.json(jsonConfig.albums);
-// });
-
-// app.use('/photos', express.static(path.join(__dirname, 'public/photos').replace('dist', 'src'), {
-//   setHeaders: function(res, path) {
-//     res.set("Content-Security-Policy", "default-srd 'self'")
-//   }
-// }));
-
-app.get('/photos', async (req, res) => {
-  if (req.session.auth == 0) return console.error('Unautorized user');
+app.get('/get-albums', async (req, res) => {
+  const auth = await decodeToken(req, res);
+  if (!auth) {
+    console.log('Not authorized');
+    return;
+  }
+  if (req.session.auth == 0) return console.error('Unauthorized user');
   const token = await adobeSession.apiToken(db);
   if (token == 'error') return console.error('No api token');
-  // await getAssets(token);
+
+  await getAlbums(token);
+  const config = fs.readFileSync(path.join(__dirname, 'photo_config.json'), 'utf-8');
+  const jsonConfig = JSON.parse(config);
   
-  // const photos = await getRenditions(token);
-  // const photoJson = JSON.stringify(photos);
-
-  // const folderPath = path.join(__dirname, 'public/photos').replace('dist', 'src');
-
-  // fs.readdir(folderPath, (err, files) => {
-  //   if (err) {
-  //     console.log(err.message);
-  //     return res.status(500).json({ error: 'Unable to scan directory' });
-  //   }
-
-  //   const photoUrls = files.map(file => `${req.protocol}://${req.get('host')}/photos/${file}`);
-  //   res.json(photoUrls);
-  // });
-  const photoUrls = await getRenditions(token);
-  res.json(photoUrls);
+  res.json(jsonConfig.albums);
+  console.log('Successfully fetched albums');
 });
 
-// process.on('SIGINT', () => {
-//   const sessions = path.join(__dirname, '../sessions.db');
-//   const tokens = path.join(__dirname, '../tokens.db');
-//   fs.unlink(sessions, (err) => {
-//     console.log('Error deleting file: ', err);
-//   });
-//   fs.unlink(tokens, (err) => {
-//     console.log('Error: ', err);
-//   });
+app.put('/album-click/:id', async (req, res) => {
+  console.log('Altering selected albums...');
+  const auth = await decodeToken(req, res);
+  if (!auth) return;
+
+  const key = req.params.id;
+  const configPath = path.join(__dirname, 'photo_config.json');
+  const config = fs.readFileSync(configPath, 'utf-8');
+  const jsonConfig = JSON.parse(config); 
+
+  if (!(key in jsonConfig.albums)) {
+    res.status(400).send('Cannot add new album');
+    return;
+  }
+
+  jsonConfig.albums[key].selected = !jsonConfig.albums[key].selected;
+  fs.writeFileSync(configPath, JSON.stringify(jsonConfig, null, 2));
+  res.json(jsonConfig.albums);
+
+  const token = await adobeSession.apiToken(db);
+  if (token == 'error') return console.error('No api token');
+  await getAssets(token);
+  console.log('Successfully altered albums');
+});
+
+app.get('/photos', async (req, res) => {
+  if (req.session.auth == 0) return console.error('Unauthorized user');
+  const token = await adobeSession.apiToken(db);
+  if (token == 'error') return console.error('No api token');
+
+  const photoUrls = await fetchRenditions(token, db);
+  res.json(photoUrls);
+  console.log('Successfully fetched photos');
+});
+
+// app.post('/refresh-catalog', async (req, res) => {
+//   const token = await adobeSession.apiToken(db);
+//   await getCatalog(token);
 // })

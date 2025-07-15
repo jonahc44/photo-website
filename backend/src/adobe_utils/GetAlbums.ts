@@ -21,6 +21,7 @@ interface AlbumRes {
 };
 
 export const getAlbums = async (token: string) => {
+    const secrets = JSON.parse(process.env.SECRETS as string);
     const config = fs.readFileSync(path.join(__dirname, '../photo_config.json'), 'utf-8');
     const jsonConfig = JSON.parse(config);
     const catHref = jsonConfig.href;
@@ -28,7 +29,7 @@ export const getAlbums = async (token: string) => {
 
     const response = await axios.get<string>(url, {
         headers: {
-            'X-API-Key': `${process.env.ADOBE_ID}`,
+            'X-API-Key': `${secrets.adobe_id}`,
             'Authorization': `Bearer ${token}`
         }
     });

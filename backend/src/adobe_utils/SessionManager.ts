@@ -75,30 +75,34 @@ export const refreshApiToken = async (db: Firestore) => {
     const apiToken = await db.collection('tokens').doc('api_token').get();
     const refreshToken = (await db.collection('tokens').doc('refresh_token').get()).get('value');
     const expiryTime = apiToken.get('expiration');
-    const currTime = Date.now();
+    const currTime = Timestamp.now();
 
     if (currTime >= expiryTime) {
-            const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
-            const authString = Buffer.from(`${process.env.ADOBE_ID}:${process.env.ADOBE_SECRET}`).toString('base64');
+        const secrets = JSON.parse(process.env.SECRETS as string);
+        const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
+        const authString = Buffer.from(`${secrets.adobe_id}:${secrets.adobe_secret}`).toString('base64');
 
-            axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${refreshToken}`, {
-                headers: {
-                    'Authorization': `Basic ${authString}`,
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            }).then(response => {
-                const newAccess = response.data.access_token;
-                const newRefresh = response.data.refresh_token;
-                const newExpiry = response.data.expires_in;
+        console.log('Fetching new api token...');
+        axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${refreshToken}`, {
+            headers: {
+                'Authorization': `Basic ${authString}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        }).then(response => {
+            const newAccess = response.data.access_token;
+            const newRefresh = response.data.refresh_token;
+            const newExpiry = response.data.expires_in;
 
-                db.collection('tokens').doc('token_info').update({
-                    api_token: newAccess,
-                    refresh_token: newRefresh,
-                    expires_in: newExpiry,
-                    last_refreshed: Date.now()
-                });
+            db.collection('tokens').doc('api_token').update({
+                value: newAccess,
+                expiration: Timestamp.fromMillis(Date.now() + newExpiry * 1000)
+            });
+
+            db.collection('tokens').doc('refresh_token').update({
+                value: newRefresh
             })
-        }
+        })
+    }
 
     // db.get<DbRow>(`SELECT api_token, refresh_token, expires_in, last_refreshed FROM tokens ORDER BY last_refreshed DESC LIMIT 1`, (err, row) => {
     //     if (err || !row) {
