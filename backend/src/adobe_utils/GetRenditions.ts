@@ -14,6 +14,7 @@ interface Album {
     photos: {
         [key: string]: {
             href: string,
+            url: string,
             index: number
         }
     }
@@ -37,14 +38,14 @@ export const fetchRenditions = async (token: string, db: admin.firestore.Firesto
     }
     
     const bucket = admin.storage().bucket();
-    const config = fs.readFileSync(path.join(__dirname, '../photo_config.json'), 'utf-8');
-    const jsonConfig = JSON.parse(config);
-    const catHref = jsonConfig.href;
+    const catalog = await db.collection('photo_metadata').doc('catalog').get();
+    const catHref = await catalog.get('href');
     const baseUrl = `https://lr.adobe.io/v2/${catHref}/`;
     
-    const allData: any[] = [];
-    for (const albumKey in jsonConfig.albums) {
-        const album = jsonConfig.albums[albumKey] as Album;
+    let albums = (await db.collection('photo_metadata').doc('albums').get()).data();
+    let allData: any[] = [];
+    for (const albumKey in albums) {
+        const album = albums[albumKey] as Album;
         if (album.selected) {
             const keys = Object.keys(album.photos);
             const photos = album.photos;
@@ -69,46 +70,47 @@ export const fetchRenditions = async (token: string, db: admin.firestore.Firesto
 
                         const binaryData = await response.data as ArrayBuffer;
                         try {
-                            const writeStream = file.createWriteStream({
-                                metadata: {
-                                    contentType: 'image/jpeg'
-                                },
-                                resumable: false
+                            await new Promise<void>((res, rej) => {
+                                const writeStream = file.createWriteStream({
+                                    metadata: {
+                                        contentType: 'image/jpeg'
+                                    },
+                                    resumable: false
+                                });
+
+                                writeStream.on('error', (err) => {
+                                    console.error('Error when uploading photo:', err);
+                                    rej(err);
+                                });
+
+                                writeStream.on('finish', async () => {
+                                    try {
+                                        const [url] = await file.getSignedUrl({
+                                            action: 'read',
+                                            expires: '03-09-2400'
+                                        });
+
+                                        if (typeof albums === 'object') {
+                                            albums[albumKey].photos[key].url = url;
+                                        }
+                                        res();
+                                    } catch (err) {
+                                        console.error('Could not get signed url:', err);
+                                        rej(err);
+                                    }
+                                });
+
+                                writeStream.end(binaryData);
                             });
-
-                            writeStream.on('error', (err) => {
-                                console.error('Error when uploading photo:', err);
-                            });
-
-                            writeStream.on('finish', async () => {
-                                try {
-                                    const [url] = await file.getSignedUrl({
-                                        action: 'read',
-                                        expires: '03-09-2400'
-                                    });
-
-                                    await db.collection('photo_metadata').doc(filename).set({
-                                        url: url,
-                                        index: photos[key].index
-                                    });
-                                    allData.push(url);
-                                } catch (err) {
-                                    console.error('Could not get signed url:', err);
-                                }
-                            });
-
-                            writeStream.end(binaryData);
                         } catch (err) {
                             console.error('Error uploading images: ', err);
                         }
                     } else {
-                        const metadata = await db.collection('photo_metadata').doc(filename).get();
-                        const url = await metadata.get('url');
-                        const index = await metadata.get('index');
-                        allData.push({
-                            url: url,
-                            index: index
+                        const [url] = await file.getSignedUrl({
+                            action: 'read',
+                            expires: '03-09-2400'
                         });
+                        albums[albumKey].photos[key].url = url;
                     }
                 } catch (err) {
                     console.error('Error fetching image:', err);
@@ -116,7 +118,9 @@ export const fetchRenditions = async (token: string, db: admin.firestore.Firesto
             }
 
             await Promise.all(keys.map(key => fetchAll(key)));
+            allData = Object.values(albums[albumKey].photos).concat(allData);
         }
+        await db.collection('photo_metadata').doc('albums').set(albums);
     }
     return allData;
 }

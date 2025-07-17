@@ -1,7 +1,8 @@
 import axios from 'axios'
 import dotenv from 'dotenv'
 import fs from 'fs'
-import path from 'path';
+import path from 'path'
+import { Firestore } from 'firebase-admin/firestore';
 dotenv.config();
 
 interface Album {
@@ -20,11 +21,10 @@ interface AlbumRes {
     resources: [Album]
 };
 
-export const getAlbums = async (token: string) => {
+export const getAlbums = async (token: string, db: Firestore) => {
     const secrets = JSON.parse(process.env.SECRETS as string);
-    const config = fs.readFileSync(path.join(__dirname, '../photo_config.json'), 'utf-8');
-    const jsonConfig = JSON.parse(config);
-    const catHref = jsonConfig.href;
+    const catalog = await db.collection('photo_metadata').doc('catalog').get();
+    const catHref = await catalog.get('href');
     const url = `https://lr.adobe.io/v2/${catHref}/albums`;
 
     const response = await axios.get<string>(url, {
@@ -37,22 +37,29 @@ export const getAlbums = async (token: string) => {
     const stringData = response.data.replace('while (1) {}\n', '');
     const data = JSON.parse(stringData) as AlbumRes;
 
+    let albums = (await db.collection('photo_metadata').doc('albums').get()).data();
     for (var i = 0; i < data.resources.length; i++) {
         const album = data.resources[i];
         const key = `album_${album.id}`;
-        if (!(key in jsonConfig.albums))
-            jsonConfig.albums[key] = {
-                name: album.payload.name,
-                href: album.links.self.href,
-                selected: false,
-                photos: {}
+        
+        if (typeof albums === 'object') {
+            if (!(key in albums)) {
+                albums[key] = {
+                    name: album.payload.name,
+                    href: album.links.self.href,
+                    selected: false,
+                    photos: {}
+                }
             }
+        }
     }
 
     try {
-        const file = path.join(__dirname, '../photo_config.json');
-        fs.writeFileSync(file, JSON.stringify(jsonConfig, null, 2));
+        if (typeof albums === 'object') await db.collection('photo_metadata').doc('albums').set(albums);
+        else throw new Error;
     } catch (err) {
         console.error(err);
     }
+
+    return albums;
 }

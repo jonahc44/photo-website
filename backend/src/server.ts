@@ -254,11 +254,9 @@ app.get('/get-albums', async (req, res) => {
   const token = await adobeSession.apiToken(db);
   if (token == 'error') return console.error('No api token');
 
-  await getAlbums(token);
-  const config = fs.readFileSync(path.join(__dirname, 'photo_config.json'), 'utf-8');
-  const jsonConfig = JSON.parse(config);
+  const albums = await getAlbums(token, db);
   
-  res.json(jsonConfig.albums);
+  res.json(albums);
   console.log('Successfully fetched albums');
 });
 
@@ -268,24 +266,39 @@ app.put('/album-click/:id', async (req, res) => {
   if (!auth) return;
 
   const key = req.params.id;
-  const configPath = path.join(__dirname, 'photo_config.json');
-  const config = fs.readFileSync(configPath, 'utf-8');
-  const jsonConfig = JSON.parse(config); 
+  const albums = (await db.collection('photo_metadata').doc('albums').get()).data();
 
-  if (!(key in jsonConfig.albums)) {
-    res.status(400).send('Cannot add new album');
-    return;
+  if (typeof albums === 'object') {
+    if (!(key in albums)) {
+      res.status(400).send('Cannot add new album');
+      return;
+    }
+
+    albums[key].selected = !albums[key].selected;
+    await db.collection('photo_metadata').doc('albums').update({
+      [key]: albums[key]
+    });
+    res.json(albums);
+
+    const token = await adobeSession.apiToken(db);
+    if (token == 'error') return console.error('No api token');
+    await getAssets(token, db);
+    console.log('Successfully altered albums');
+  } else {
+    console.error('Unexpected error occured when accessing albums metadata');
   }
-
-  jsonConfig.albums[key].selected = !jsonConfig.albums[key].selected;
-  fs.writeFileSync(configPath, JSON.stringify(jsonConfig, null, 2));
-  res.json(jsonConfig.albums);
-
-  const token = await adobeSession.apiToken(db);
-  if (token == 'error') return console.error('No api token');
-  await getAssets(token);
-  console.log('Successfully altered albums');
 });
+
+// app.put('/photo-order/:id', async (req, res) => {
+//   console.log('Changing order of photos...');
+//   const auth = await decodeToken(req, res);
+//   if (!auth) return;
+
+//   const key = req.params.id;
+//   const configPath = path.join(__dirname, 'photo_config.json');
+//   const config = fs.readFileSync(configPath, 'utf-8');
+//   const jsonConfig = JSON.parse(config);
+// })
 
 app.get('/photos', async (req, res) => {
   if (req.session.auth == 0) return console.error('Unauthorized user');
