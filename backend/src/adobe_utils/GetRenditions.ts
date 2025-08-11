@@ -10,7 +10,7 @@ dotenv.config();
 interface Album {
     name: string,
     href: string,
-    selected: boolean,
+    selected: number,
     photos: {
         [key: string]: {
             href: string,

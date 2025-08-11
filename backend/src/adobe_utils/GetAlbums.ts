@@ -23,7 +23,7 @@ interface AlbumRes {
 
 export const getAlbums = async (token: string, db: Firestore) => {
     const secrets = JSON.parse(process.env.SECRETS as string);
-    const catalog = await db.collection('photo_metadata').doc('catalog').get();
+    const catalog = await db.collection(`photo_metadata`).doc('catalog').get();
     const catHref = await catalog.get('href');
     const url = `https://lr.adobe.io/v2/${catHref}/albums`;
 
@@ -37,7 +37,7 @@ export const getAlbums = async (token: string, db: Firestore) => {
     const stringData = response.data.replace('while (1) {}\n', '');
     const data = JSON.parse(stringData) as AlbumRes;
 
-    let albums = (await db.collection('photo_metadata').doc('albums').get()).data();
+    let albums = (await db.collection(`photo_metadata`).doc('albums').get()).data();
     for (var i = 0; i < data.resources.length; i++) {
         const album = data.resources[i];
         const key = `album_${album.id}`;
@@ -47,7 +47,7 @@ export const getAlbums = async (token: string, db: Firestore) => {
                 albums[key] = {
                     name: album.payload.name,
                     href: album.links.self.href,
-                    selected: false,
+                    selected: 0,
                     photos: {}
                 }
             }
@@ -55,7 +55,7 @@ export const getAlbums = async (token: string, db: Firestore) => {
     }
 
     try {
-        if (typeof albums === 'object') await db.collection('photo_metadata').doc('albums').set(albums);
+        if (typeof albums === 'object') await db.collection(`photo_metadata`).doc('albums').set(albums);
         else throw new Error;
     } catch (err) {
         console.error(err);

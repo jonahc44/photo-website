@@ -19,7 +19,7 @@ interface Asset {
 interface Album {
     name: string,
     href: string,
-    selected: boolean,
+    selected: number,
     photos: {
         [key: string]: {
             href: string,
@@ -38,14 +38,13 @@ export const getAssets = async (token: string, db: Firestore) => {
     const catalog = await db.collection('photo_metadata').doc('catalog').get();
     const catHref = await catalog.get('href');
     const baseUrl = `https://lr.adobe.io/v2/${catHref}/`;
-    let numPhotos = await catalog.get('sel_photos');
-    
     const albums = (await db.collection('photo_metadata').doc('albums').get()).data();
 
     if (typeof albums === 'object') {
         for (const albumKey in albums) {
+            let numPhotos = 0;
             const album = albums[albumKey] as Album;
-            if (album.selected) {
+            if (album.selected > 0) {
                 const url = `${baseUrl}${album.href}/assets`;
 
                 const response = await axios.get<string>(url, {
@@ -100,9 +99,9 @@ export const getAssets = async (token: string, db: Firestore) => {
         return;
     }
 
-    await db.collection('photo_metadata').doc('catalog').update({
-        ['sel_photos']: numPhotos
-    });
+    // await db.collection('photo_metadata').doc('catalog').update({
+    //     ['sel_photos']: numPhotos
+    // });
 
     try {
         if (typeof albums === 'object') await db.collection('photo_metadata').doc('albums').set(albums);
