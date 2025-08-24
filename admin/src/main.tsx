@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import * as ReactDOM from 'react-dom/client'
-import { RouterProvider, createRouter } from '@tanstack/react-router'
+import { RouterProvider, createHashHistory, createRouter } from '@tanstack/react-router'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen.ts'
@@ -13,7 +13,7 @@ import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 
 // Initialize firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyDY5B4yYYjaM1mj1U2tlrtbAr-jpMBUIkU",
+  apiKey: "AIzaSyAwQyjYTGJnhn54DS0_qEC9gZjWLtDnwIs",
   authDomain: "photo-website-f20b9.firebaseapp.com",
   databaseURL: "https://photo-website-f20b9-default-rtdb.firebaseio.com",
   projectId: "photo-website-f20b9",

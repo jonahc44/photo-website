@@ -24,6 +24,7 @@ interface Album {
         [key: string]: {
             href: string,
             url: string,
+            thumbnail: string,
             index: number
         }
     }
@@ -87,6 +88,7 @@ export const getAssets = async (token: string, db: Firestore) => {
                         album.photos[key] = {
                             href: asset.links.self.href,
                             url: '',
+                            thumbnail: '',
                             index: numPhotos
                         }
                         numPhotos++;

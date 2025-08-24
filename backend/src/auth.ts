@@ -1,6 +1,7 @@
 import * as adobeSession from './adobe_utils/SessionManager'
 import { Request, Response } from 'express'
 import { auth, firestore } from 'firebase-admin'
+import axios from 'axios'
 import crypto from 'crypto'
 import qs from 'querystring'
 
@@ -92,36 +93,36 @@ export const callback = async (req: Request, res: Response, auth: auth.Auth, db:
     }
 
     try {
-        const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
-        const authString = Buffer.from(`${secrets.adobe_id}:${secrets.adobe_secret}`).toString('base64');
-        const params = qs.stringify({
-        code: code as string,
-        grant_type: 'authorization_code',
-        client_id: secrets.adobe_id,
-        client_secret: secrets.adobe_secret
-        });
-        
-        const response = await axios.post<TokenResponse>(tokenUrl, params, {
+      const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
+      const authString = Buffer.from(`${secrets.adobe_id}:${secrets.adobe_secret}`).toString('base64');
+      const params = qs.stringify({
+      code: code as string,
+      grant_type: 'authorization_code',
+      client_id: secrets.adobe_id,
+      client_secret: secrets.adobe_secret
+      });
+      
+      const response = await axios.post<TokenResponse>(tokenUrl, params, {
         headers: {
             'Authorization': authString,
             'Content-Type': 'application/x-www-form-urlencoded',
         }
-        });
+      });
 
-        const accessToken = response.data.access_token;
-        const refreshToken = response.data.refresh_token;
-        const expiryTime = response.data.expires_in;
-        
-        const userUrl = `https://ims-na1.adobelogin.com/ims/userinfo/v2?client_id=${secrets.adobe_id}`;
-        const userInfo = await axios.get<UserResponse>(userUrl, {
+      const accessToken = response.data.access_token;
+      const refreshToken = response.data.refresh_token;
+      const expiryTime = response.data.expires_in;
+      
+      const userUrl = `https://ims-na1.adobelogin.com/ims/userinfo/v2?client_id=${secrets.adobe_id}`;
+      const userInfo = await axios.get<UserResponse>(userUrl, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
-        });
+      });
 
-        const userId = userInfo.data.sub;
+      const userId = userInfo.data.sub;
 
-        if (userId != secrets.admin_id) {
+      if (userId != secrets.admin_id) {
         const revokeUrl = 'https://ims-na1.adobelogin.com/ims/revoke';
         await axios.post(revokeUrl, `token=${accessToken}`, {
             headers: {
@@ -130,11 +131,11 @@ export const callback = async (req: Request, res: Response, auth: auth.Auth, db:
             }
         });
 
-        res.send('Wrong user, please try again');
+        res.status(404).send('Wrong user, please try again');
         return;
-        }
+      }
 
-        try {
+      try {
         const firebaseCustomToken = await auth.createCustomToken(userId, {
             source: 'adobe_api'
         });
@@ -143,11 +144,11 @@ export const callback = async (req: Request, res: Response, auth: auth.Auth, db:
         adobeSession.createSession(accessToken, refreshToken, expiryTime, db);
         res.redirect(`https://localhost:4000/#token=${firebaseCustomToken}`);
         // res.header({ firebaseCustomToken });
-        } catch (error: any) {
+      } catch (error: any) {
         console.error('Error minting Firebase custom token:', error.message);
-        }
+      }
     } catch (error: any) {
-        console.error('Error getting tokens: ', error.response);
-        res.send('Error retrieving access token');
+        console.error('Error getting tokens: ', error);
+        res.status(404).send('Error retrieving access token');
     }
 }

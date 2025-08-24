@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
 import * as admin from 'firebase-admin'
+import { File } from '@google-cloud/storage';
 // import serviceAccount from '../serviceAccountKey.json'
 dotenv.config();
 
@@ -15,12 +16,13 @@ interface Album {
         [key: string]: {
             href: string,
             url: string,
+            thumbnail: string,
             index: number
         }
     }
 }
 
-export const fetchRenditions = async (token: string, db: admin.firestore.Firestore) => {
+export const fetchRenditions = async (token: string, db: admin.firestore.Firestore, currAlbum: string, type: string) => {
     const secrets = JSON.parse(process.env.SECRETS as string);
     
     if (!admin.apps.length){
@@ -46,19 +48,27 @@ export const fetchRenditions = async (token: string, db: admin.firestore.Firesto
     let allData: any[] = [];
     for (const albumKey in albums) {
         const album = albums[albumKey] as Album;
-        if (album.selected) {
+        if (album.selected > 0 && albumKey === currAlbum) {
             const keys = Object.keys(album.photos);
             const photos = album.photos;
 
             const fetchAll = async (key: string) => {
                 const href = photos[key].href;
+                
                 try {
                     const filename = `${key}.jpg`;
-                    const file = bucket.file(`photos/${filename}`);
+                    let file: File;
+
+                    if (type === 'thumbnail2x') {
+                        file = bucket.file(`thumbnails/${filename}`)
+                    } else {
+                        file = bucket.file(`photos/${filename}`)
+                    }
+
                     const [exists] = await file.exists();
 
                     if (!exists) {
-                        const response = await axios.get(`${baseUrl}${href}/renditions/2048`, {
+                        const response = await axios.get(`${baseUrl}${href}/renditions/${type}`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'X-API-Key': secrets.adobe_id,
@@ -91,7 +101,11 @@ export const fetchRenditions = async (token: string, db: admin.firestore.Firesto
                                         });
 
                                         if (typeof albums === 'object') {
-                                            albums[albumKey].photos[key].url = url;
+                                            if (type === 'thumbnail2x') {
+                                                albums[albumKey].photos[key].thumbnail = url;
+                                            } else {
+                                                albums[albumKey].photos[key].url = url;
+                                            }
                                         }
                                         res();
                                     } catch (err) {
@@ -110,7 +124,11 @@ export const fetchRenditions = async (token: string, db: admin.firestore.Firesto
                             action: 'read',
                             expires: '03-09-2400'
                         });
-                        albums[albumKey].photos[key].url = url;
+                        if (type === 'thumbnail2x') {
+                            albums[albumKey].photos[key].thumbnail = url;
+                        } else {
+                            albums[albumKey].photos[key].url = url;
+                        }
                     }
                 } catch (err) {
                     console.error('Error fetching image:', err);
