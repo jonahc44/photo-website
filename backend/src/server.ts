@@ -81,7 +81,7 @@ if (!admin.apps.length){
 const db = admin.firestore();
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT;
 // const router = express.Router();
 
 app.use(cors({
@@ -125,8 +125,8 @@ if (process.env.ENV == 'dev') {
   });
 } else {
   const server = app.listen(PORT, () => {
-  const address = server.address() as AddressInfo;
-  if (!address) return;
+    const address = server.address() as AddressInfo;
+    if (!address) return;
     console.log(`App listening on ${address.address}:${PORT}`);
   })
 }

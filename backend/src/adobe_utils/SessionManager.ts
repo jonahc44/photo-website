@@ -48,7 +48,7 @@ export const refreshApiToken = async (db: Firestore) => {
         const authString = Buffer.from(`${secrets.adobe_id}:${secrets.adobe_secret}`).toString('base64');
 
         console.log('Fetching new api token...');
-        axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${refreshToken}`, {
+        await axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${refreshToken}`, {
             headers: {
                 'Authorization': `Basic ${authString}`,
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -71,7 +71,7 @@ export const refreshApiToken = async (db: Firestore) => {
 }
 
 export const apiToken = async (db: Firestore) => {
-    refreshApiToken(db);
+    await refreshApiToken(db);
 
     const tokenInfo = await db.collection('tokens').doc('api_token').get();
     return tokenInfo.get('value');
