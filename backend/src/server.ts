@@ -69,7 +69,10 @@ if (!admin.apps.length){
           credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
       });
     } else {
-      admin.initializeApp();
+      admin.initializeApp({
+        projectId: process.env.FIREBASE_ID,
+        storageBucket: process.env.FIREBASE_BUCKET
+      });
     }
 }
 
