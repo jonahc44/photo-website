@@ -57,8 +57,6 @@ interface Collection {
   index: number
 }
 
-console.log('SECRETS:', process.env.SECRETS);
-
 const secrets = JSON.parse(process.env.SECRETS as string);
 
 if (!admin.apps.length){
@@ -109,10 +107,6 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: 'none'
   },
-  store: new FirestoreStore({
-    dataset: db,
-    kind: 'express-session'
-  })
 }))
 
 app.use(express.json());
@@ -447,7 +441,20 @@ app.put('/thumbnail-click/:collection/:thumbnail', async (req, res) => {
     }
 
     const thumbnail = req.params.thumbnail;
-    collections[key].thumbnail = collections[key].thumbnail === thumbnail ? '' : thumbnail;
+
+    if (collections[key].thumbnail !== thumbnail) {
+      collections[key].thumbnail = thumbnail;
+      const albums = (await db.collection('photo_metadata').doc('albums').get()).data();
+      if (typeof albums === 'object') {
+        const album = collections[key].album;
+        collections[key].thumbnailUrl = albums[album].photos[thumbnail].thumbnail;
+      }
+    } else {
+      collections[key].thumbnail = '';
+      collections[key].thumbnailUrl = '';
+    }
+    
+
     await db.collection('photo_metadata').doc('collections').update({
       [key]: collections[key]
     });

@@ -12,7 +12,7 @@ env:
     secret: SECRETS
 
   - variable: REDIRECT
-    value: https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/callback
+    value: https://localhost:5000/callback
 
   - variable: FIREBASE_ID
     value: photo-website-f20b9
