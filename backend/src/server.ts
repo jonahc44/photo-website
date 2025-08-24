@@ -69,9 +69,11 @@ if (!admin.apps.length){
           credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
       });
     } else {
+      console.log('Operating in production environment');
       admin.initializeApp({
         projectId: process.env.FIREBASE_ID,
-        storageBucket: process.env.FIREBASE_BUCKET
+        storageBucket: process.env.FIREBASE_BUCKET,
+        credential: admin.credential.applicationDefault()
       });
     }
 }
