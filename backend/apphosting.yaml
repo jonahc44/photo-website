@@ -13,3 +13,9 @@ env:
 
   - variable: REDIRECT
     value: https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/callback
+
+  - variable: FIREBASE_ID
+    value: photo-website-f20b9
+  
+  - variable: FIREBASE_BUCKET
+    value: gs://photo-website-f20b9.firebasestorage.app

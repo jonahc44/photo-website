@@ -57,6 +57,8 @@ interface Collection {
   index: number
 }
 
+console.log('SECRETS:', process.env.SECRETS);
+
 const secrets = JSON.parse(process.env.SECRETS as string);
 
 if (!admin.apps.length){
