@@ -39,7 +39,7 @@ export const Route = createFileRoute('/')({
     const idToken = await currentUser?.getIdToken(true);
     console.log('Fetching auth status...');
 
-    const status = await fetch('https://localhost:5000/auth-status', {
+    const status = await fetch('https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/auth-status', {
       method: 'GET',
       credentials: 'include',
       headers: {

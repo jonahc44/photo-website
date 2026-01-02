@@ -27,7 +27,7 @@ export interface Collection {
 export const fetchCollections = async (home = false) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://localhost:5000/get-collections`, {
+    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/get-collections`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -54,7 +54,7 @@ export const fetchCollections = async (home = false) => {
 const reorderCollections = async (colls: Collection[]) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://localhost:5000/reorder-collections`, {
+    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/reorder-collections`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -71,7 +71,7 @@ const reorderCollections = async (colls: Collection[]) => {
   const delCollection = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://localhost:5000/del-collection/${href}`, {
+    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/del-collection/${href}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -87,7 +87,7 @@ const reorderCollections = async (colls: Collection[]) => {
 const addCollection = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://localhost:5000/add-collection/${href}`, {
+    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/add-collection/${href}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -103,7 +103,7 @@ const addCollection = async (href: string) => {
 const updateCollections = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://localhost:5000/collection-click/${href}`, {
+    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/collection-click/${href}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -229,7 +229,13 @@ function SortableCollectionRow({
         </svg>
         <button
           className={`w-fit h-fit p-1 m-1 ml-0 text-xl border-3 self-end hover:text-gray-500 hover:border-gray-500 hover:cursor-pointer 
-                  ${activeColl == collection.name ? 'text-gray-500 border-gray-500' : 'border-black'}`}
+                  ${
+                collection.selected
+                  ? 'border-blue-500 text-blue-500'
+                  : activeColl == collection.name
+                    ? 'text-gray-500 border-gray-500'
+                    : 'border-black'
+              }`}
           onClick={() => setColl(collection.name)}
         >
           {collection.name}
