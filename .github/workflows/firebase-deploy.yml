@@ -1,0 +1,42 @@
+name: Deploy Frontends
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'admin/**'
+      - 'firebase.json'
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy_sites:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      # --- 1. BUILD PUBLIC SITE ---
+      - name: Install & Build Public Site
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+
+      # --- 2. BUILD ADMIN PANEL ---
+      - name: Install & Build Admin Panel
+        working-directory: ./admin
+        run: |
+          npm ci
+          npm run build
+
+      # --- 3. DEPLOY TO FIREBASE HOSTING ---
+      - name: Deploy Hosting Only
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          channelId: live
+          projectId: photo-website-f20b9
+          target: photo-site,admin-panel
