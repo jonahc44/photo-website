@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-import { ref, uploadBytes, deleteObject, listAll } from "firebase/storage"
+import { ref, uploadBytes, deleteObject, listAll, getDownloadURL } from "firebase/storage"
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { storage, db } from '@/firebase'
 import { useRef, useState, useEffect } from 'react'
@@ -12,13 +12,17 @@ const fetchAboutImage = async () => {
 
 const replaceImage = async (newFile: File) => {
     const folderRef = ref(storage, 'about/');
+    const docRef = doc(db, 'about', 'bio');
     const result = await listAll(folderRef);
     
     const deletePromises = result.items.map((itemRef) => deleteObject(itemRef));
     await Promise.all(deletePromises);
     
     const newFileRef = ref(storage, `about/${newFile.name}`);
-    await uploadBytes(newFileRef, newFile);
+    const snapshot = await uploadBytes(newFileRef, newFile);
+
+    const url = await getDownloadURL(snapshot.ref);
+    await setDoc(docRef, { imageUrl: url }, { merge: true });
     
     return newFile.name;
 }
