@@ -13,6 +13,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { auth } from '@/main'
 import { type Collection, fetchCollections } from '@/Collections'
+import { apiUrl } from './config'
 
 export type Photo = {
   thumbnail: string,
@@ -21,7 +22,7 @@ export type Photo = {
 }
 
 export const fetchThumbnails = async (album: string) => {
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/thumbnails/${album}`);
+    const response = await fetch(`${apiUrl}/thumbnails/${album}`);
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
@@ -32,7 +33,7 @@ export const fetchThumbnails = async (album: string) => {
 export const updateThumbnails = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/thumbnail-click/${href}`, {
+    const response = await fetch(`${apiUrl}/thumbnail-click/${href}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -49,7 +50,7 @@ export const reorderThumbnails = async (photos: Photo[], album: string) => {
     console.log('Reordering photos');
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/reorder-photos/${album}`, {
+    const response = await fetch(`${apiUrl}/reorder-photos/${album}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {

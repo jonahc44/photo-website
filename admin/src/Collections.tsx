@@ -15,6 +15,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { auth } from '@/main'
 import Albums from './Albums'
 import Thumbnail from './Thumbnails'
+import { apiUrl } from './config'
 
 export interface Collection {
   name: string,
@@ -27,7 +28,7 @@ export interface Collection {
 export const fetchCollections = async (home = false) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/get-collections`, {
+    const response = await fetch(`${apiUrl}/get-collections`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -54,7 +55,7 @@ export const fetchCollections = async (home = false) => {
 const reorderCollections = async (colls: Collection[]) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/reorder-collections`, {
+    const response = await fetch(`${apiUrl}/reorder-collections`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -71,7 +72,7 @@ const reorderCollections = async (colls: Collection[]) => {
   const delCollection = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/del-collection/${href}`, {
+    const response = await fetch(`${apiUrl}/del-collection/${href}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -87,7 +88,7 @@ const reorderCollections = async (colls: Collection[]) => {
 const addCollection = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/add-collection/${href}`, {
+    const response = await fetch(`${apiUrl}/add-collection/${href}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -103,7 +104,7 @@ const addCollection = async (href: string) => {
 const updateCollections = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/collection-click/${href}`, {
+    const response = await fetch(`${apiUrl}/collection-click/${href}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {

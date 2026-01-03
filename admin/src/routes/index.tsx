@@ -6,6 +6,7 @@ import Albums from '@/Albums'
 import Thumbnail from '@/Thumbnails'
 import Collections from '@/Collections'
 import About from '@/About'
+import { apiUrl } from '@/config'
 
 export const Route = createFileRoute('/')({
   component: Index,
@@ -40,7 +41,7 @@ export const Route = createFileRoute('/')({
     const idToken = await currentUser?.getIdToken(true);
     console.log('Fetching auth status...');
 
-    const status = await fetch('https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/auth-status', {
+    const status = await fetch(`${apiUrl}/auth-status`, {
       method: 'GET',
       credentials: 'include',
       headers: {

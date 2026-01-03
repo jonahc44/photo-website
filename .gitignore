@@ -4,7 +4,7 @@ dist
 dist-ssr
 build
 *.local
-*.env
+*.env.*
 *.pem
 *.db
 photo_config.json

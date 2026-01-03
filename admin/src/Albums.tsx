@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { auth } from '@/main'
+import { apiUrl } from './config'
 
 export interface Album {
   id: string,
@@ -18,7 +19,7 @@ export interface Album {
 export const fetchAlbums = async (activeColl: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/get-albums/${activeColl}`, {
+    const response = await fetch(`${apiUrl}/get-albums/${activeColl}`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -44,7 +45,7 @@ export const fetchAlbums = async (activeColl: string) => {
 export const updateAlbum = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`https://photo-website-backend--photo-website-f20b9.us-central1.hosted.app/album-click/${href}`, {
+    const response = await fetch(`${apiUrl}/album-click/${href}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
