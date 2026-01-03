@@ -89,8 +89,9 @@ export const Albums: React.FC<AlbumsProps> = ({activeColl}) => {
           <div key={album.id}>
             <label>
               <input
-                className='mx-2'
+                className='mx-2 disabled:opacity-50 disabled:cursor-not-allowed'
                 type='checkbox'
+                disabled={mutation.isPending}
                 checked={album.selected}
                 onChange={() => {
                   mutation.mutate(`${album.id}/${activeColl}`);
