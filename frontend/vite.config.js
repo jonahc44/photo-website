@@ -20,9 +20,8 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
-  base: '/photo-deploy/',
-    build: {
-      outDir: 'build',
-      emptyOutDir: true,
-    }
+  build: {
+    outDir: 'build',
+    emptyOutDir: true,
+  }
 });

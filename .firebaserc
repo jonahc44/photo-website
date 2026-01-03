@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "photo-website-f20b9": "photo-website-f20b9"
+  },
+  "targets": {
+    "photo-website-f20b9": {
+      "hosting": {
+        "photo-site": [
+          "photo-website-f20b9"
+        ],
+        "admin-site": [
+          "photo-admin-3b694"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
