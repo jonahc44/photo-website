@@ -8,23 +8,8 @@ import { routeTree } from './routeTree.gen.ts'
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
 
-import { initializeApp } from 'firebase/app'
-import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
-
-// Initialize firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyAwQyjYTGJnhn54DS0_qEC9gZjWLtDnwIs",
-  authDomain: "photo-website-f20b9.firebaseapp.com",
-  databaseURL: "https://photo-website-f20b9-default-rtdb.firebaseio.com",
-  projectId: "photo-website-f20b9",
-  storageBucket: "photo-website-f20b9.firebasestorage.app",
-  messagingSenderId: "68823767939",
-  appId: "1:68823767939:web:95764f4ab07c1e3e4074b6",
-  measurementId: "G-LTE32NVHF6"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+import { auth } from './firebase'
+import { onAuthStateChanged, type User } from 'firebase/auth'
 
 const authInitializedPromise = new Promise<User | null>((resolve) => {
   const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -32,7 +17,6 @@ const authInitializedPromise = new Promise<User | null>((resolve) => {
     unsubscribe(); // Unsubscribe after the first call
   });
 });
-
 
 // Create a new router instance
 const router = createRouter({

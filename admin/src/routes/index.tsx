@@ -5,6 +5,7 @@ import { signInWithCustomToken, signOut } from 'firebase/auth'
 import Albums from '@/Albums'
 import Thumbnail from '@/Thumbnails'
 import Collections from '@/Collections'
+import About from '@/About'
 
 export const Route = createFileRoute('/')({
   component: Index,
@@ -103,14 +104,6 @@ function Index() {
             <Thumbnail collectionKey={'homepage'} setThumbnail={setEditing} />
           </div>
         )}
-      </div>
-    )
-  }
-
-  const About = () => {
-    return (
-      <div>
-
       </div>
     )
   }
