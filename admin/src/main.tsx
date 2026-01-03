@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import * as ReactDOM from 'react-dom/client'
-import { RouterProvider, createHashHistory, createRouter } from '@tanstack/react-router'
+import { RouterProvider, createRouter } from '@tanstack/react-router'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen.ts'
@@ -8,7 +8,7 @@ import { routeTree } from './routeTree.gen.ts'
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
 
-import { auth } from './firebase'
+import { auth } from './config'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 
 const authInitializedPromise = new Promise<User | null>((resolve) => {

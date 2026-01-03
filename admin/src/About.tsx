@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { ref, uploadBytes, deleteObject, listAll, getDownloadURL } from "firebase/storage"
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { storage, db } from '@/firebase'
+import { storage, db } from '@/config'
 import { useRef, useState, useEffect } from 'react'
 
 const fetchAboutImage = async () => {

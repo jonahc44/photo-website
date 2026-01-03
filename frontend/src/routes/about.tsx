@@ -4,7 +4,7 @@ import { HeaderController } from '@/Header'
 import { Footer } from '@/Footer'
 import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
-import { db } from '@/firebase'
+import { db } from '@/config'
 import '../global.css'
 
 export const Route = createFileRoute('/about')({

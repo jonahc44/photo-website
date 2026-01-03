@@ -3,8 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Footer } from '@/Footer';
 import { HeaderController } from '@/Header';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase';
-import { apiUrl } from '@/config';
+import { db } from '@/config';
 import '../global.css'
 
 interface Collection {
