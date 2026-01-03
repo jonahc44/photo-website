@@ -95,43 +95,45 @@ function Index() {
   const Home: React.FC = () => {
     const [editing, setEditing] = useState(false);
     
-    // const refreshMutation = useMutation({
-    //   mutationFn: async () => {
-    //     const token = await auth.currentUser?.getIdToken();
-    //     const response = await fetch(`${apiUrl}/refresh-all`, {
-    //       method: 'POST',
-    //       headers: {
-    //         'Authorization': `Bearer ${token}`,
-    //         'Content-Type': 'application/json'
-    //       }
-    //     });
+    const refreshMutation = useMutation({
+      mutationFn: async () => {
+        const token = await auth.currentUser?.getIdToken();
+        const response = await fetch(`${apiUrl}/refresh-photos`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         
-    //     if (!response.ok) {
-    //       throw new Error('Failed to refresh data');
-    //     }
+        if (!response.ok) {
+          throw new Error('Failed to refresh data');
+        }
         
-    //     return response.json();
-    //   },
-    //   onSuccess: () => {
-    //     alert("Refresh successful!");
-    //   },
-    //   onError: (error) => {
-    //     console.error(error);
-    //     alert("Failed to refresh.");
-    //   }
-    // });
+        return response.json();
+      },
+      onSuccess: () => {
+        alert("Refresh successful!");
+      },
+      onError: (error) => {
+        console.error(error);
+        alert("Failed to refresh.");
+      }
+    });
 
     return (
-      <div>
-        <button onClick={() => setEditing(true)}
-        className='m-7 p-1 text-2xl border-4 hover:cursor-pointer'>Edit Photos</button>
-        {/* <button 
-            onClick={() => refreshMutation.mutate()}
-            disabled={refreshMutation.isPending}
-            className='p-1 text-2xl border-4 hover:cursor-pointer hover:text-gray-600 hover:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed'
-          >
-            {refreshMutation.isPending ? 'Refreshing...' : 'Refresh All'}
-          </button> */}
+      <div className='flex flex-col w-full'>
+        <div className='flex flex-row w-full'>
+          <button onClick={() => setEditing(true)}
+          className='m-7 p-1 w-35 h-min text-2xl border-4 hover:cursor-pointer'>Edit Photos</button>
+          <button 
+              onClick={() => refreshMutation.mutate()}
+              disabled={refreshMutation.isPending}
+              className='m-7 p-1 text-2xl w-45 h-min border-4 ml-auto hover:cursor-pointer hover:text-gray-600 hover:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed'
+            >
+              {refreshMutation.isPending ? 'Refreshing...' : 'Refresh Photos'}
+            </button>
+          </div>
         <Albums activeColl={activeColl} />
         {editing && (
           <div>

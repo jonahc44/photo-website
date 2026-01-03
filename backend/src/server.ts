@@ -139,8 +139,7 @@ app.get('/callback', async (req, res) => {
   auth.callback(req, res, admin.auth());
 })
 
-
-// app.post('/refresh-all', async (req, res) => {
+// app.post('/refresh-albums', async (req, res) => {
 //    const auth_token = await auth.decodeToken(req, res, admin.auth());
 //   if (!auth_token) {
 //       console.error('Not authorized');
@@ -149,13 +148,26 @@ app.get('/callback', async (req, res) => {
 //   const token = await auth.adobe_token(req, res);
 //   if (token == 'error') return console.error('No api token');
 
-//   const albums = await getAlbums(token);
-//   for (let album in albums) {
-//     await fetchRenditions(token, album, '');
-//     await fetchRenditions(token, album, 'thumbnail2x');
-//   }
-//   res.status(200).send('Updated all Adobe assets');
+//   await getAlbums(token);
+//   res.status(200).send('Updated all Albums');
 // })
+
+app.post('/refresh-photos', async (req, res) => {
+   const auth_token = await auth.decodeToken(req, res, admin.auth());
+  if (!auth_token) {
+      console.error('Not authorized');
+      return;
+  }
+  const token = await auth.adobe_token(req, res);
+  if (token == 'error') return console.error('No api token');
+
+  const albums = await getAlbums(token);
+  for (let album in albums) {
+    await fetchRenditions(token, album, '2048');
+    await fetchRenditions(token, album, 'thumbnail2x');
+  }
+  res.status(200).send('Updated all Adobe assets');
+})
 
 app.get('/get-albums/:collection', async (req, res) => {
   const auth_token = await auth.decodeToken(req, res, admin.auth());
@@ -240,6 +252,7 @@ app.put('/album-click/:id/:collection', async (req, res) => {
 
     const token = await adobeSession.apiToken();
     await getAssets(token);
+    await fetchRenditions(token, key, '2048');
 
     res.json(albums);
     console.log('Successfully altered albums');

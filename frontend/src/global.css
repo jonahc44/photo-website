@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@theme {
+    --color-eggshell: #EFEAD7;
+    --color-onyx: #252728;
+}
