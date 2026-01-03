@@ -1,6 +1,7 @@
 import dotenv from 'dotenv'
 import axios from 'axios'
 import { Firestore, Timestamp } from 'firebase-admin/firestore';
+import { db } from '../server';
 
 dotenv.config();
 
@@ -20,7 +21,7 @@ interface RefreshRes {
     expires_in: number
 }
 
-export const createSession = async (apiToken: string, refreshToken: string, expiresIn: number, db: Firestore) => {
+export const createSession = async (apiToken: string, refreshToken: string, expiresIn: number) => {
     console.log('Adding tokens');
 
     try {
@@ -36,7 +37,7 @@ export const createSession = async (apiToken: string, refreshToken: string, expi
     }
 }
 
-export const refreshApiToken = async (db: Firestore) => {
+export const refreshApiToken = async () => {
     const apiToken = await db.collection('tokens').doc('api_token').get();
     const refreshToken = (await db.collection('tokens').doc('refresh_token').get()).get('value');
     const expiryTime = apiToken.get('expiration');
@@ -70,8 +71,8 @@ export const refreshApiToken = async (db: Firestore) => {
     }
 }
 
-export const apiToken = async (db: Firestore) => {
-    await refreshApiToken(db);
+export const apiToken = async () => {
+    await refreshApiToken();
 
     const tokenInfo = await db.collection('tokens').doc('api_token').get();
     return tokenInfo.get('value');

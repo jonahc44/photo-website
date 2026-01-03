@@ -62,7 +62,8 @@ const secrets = JSON.parse(process.env.SECRETS as string);
 if (!admin.apps.length){
     if (process.env.ENV == 'dev') {
       console.log('Operating in dev environment');
-      const serviceAccount = JSON.parse(fs.readFileSync(path.join(__dirname, './serviceAccountKey.json'), 'utf8'));
+      const serviceAccountPath = path.resolve(process.cwd(), 'src', 'serviceAccountKey.json');
+      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
       admin.initializeApp({
           projectId: process.env.FIREBASE_ID,
           storageBucket: process.env.FIREBASE_BUCKET,
@@ -82,7 +83,6 @@ const db = admin.firestore();
 
 const app = express();
 const PORT = process.env.PORT;
-// const router = express.Router();
 
 app.use(cors({
   credentials: true,
@@ -136,19 +136,38 @@ app.get('/auth-status', async (req, res) => {
 })
 
 app.get('/callback', async (req, res) => {
-  auth.callback(req, res, admin.auth(), db);
+  auth.callback(req, res, admin.auth());
 })
+
+
+// app.post('/refresh-all', async (req, res) => {
+//    const auth_token = await auth.decodeToken(req, res, admin.auth());
+//   if (!auth_token) {
+//       console.error('Not authorized');
+//       return;
+//   }
+//   const token = await auth.adobe_token(req, res);
+//   if (token == 'error') return console.error('No api token');
+
+//   const albums = await getAlbums(token);
+//   for (let album in albums) {
+//     await fetchRenditions(token, album, '');
+//     await fetchRenditions(token, album, 'thumbnail2x');
+//   }
+//   res.status(200).send('Updated all Adobe assets');
+// })
 
 app.get('/get-albums/:collection', async (req, res) => {
   const auth_token = await auth.decodeToken(req, res, admin.auth());
-    if (!auth_token) {
-        console.error('Not authorized');
-        return;
-    }
-  const token = await auth.adobe_token(req, res, db);
+  if (!auth_token) {
+      console.error('Not authorized');
+      return;
+  }
+  const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
-  const albums = await getAlbums(token, db);
+  const albums = await getAlbums(token);
+  await getAssets(token);
 
   if (typeof albums === 'object') {
     const collection = req.params.collection;
@@ -163,36 +182,31 @@ app.get('/get-albums/:collection', async (req, res) => {
 });
 
 app.get('/get-collections', async (req, res) => {
-  // const auth_token = await auth.decodeToken(req, res, admin.auth());
-  //   if (!auth_token) {
-  //       console.error('Not authorized');
-  //       return;
-  //   }
-  const token = await auth.adobe_token(req, res, db);
+  const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
   const collections = (await db.collection('photo_metadata').doc('collections').get()).data();
-
-  // if (typeof collections === 'object') {
-  //   delete collections.homepage;
-  // }
 
   res.json(collections);
   console.log('Successfully fetched collections');
 })
 
 app.put('/album-click/:id/:collection', async (req, res) => {
-  console.log('Altering selected albums...');
   const auth_token = await auth.decodeToken(req, res, admin.auth());
     if (!auth_token) {
         console.error('Not authorized');
         return;
     }
-  const token = await auth.adobe_token(req, res, db);
+  const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
+
+  await getAlbums(token);
 
   const key = req.params.id;
   const albums = (await db.collection(`photo_metadata`).doc('albums').get()).data();
+  const collection = req.params.collection;
+
+  console.log(`Clicked on album ${key} in collection ${collection}...`);
 
   if (typeof albums === 'object') {
     if (!(key in albums)) {
@@ -203,17 +217,12 @@ app.put('/album-click/:id/:collection', async (req, res) => {
     const albumNumPhotos = Object.values(albums[key].photos).length;
     console.log(albumNumPhotos);
 
-    // await db.collection(`photo_metadata`).doc('catalog').update({
-    //   ['sel_photos']: FieldValue.increment(albums[key].selected ? albumNumPhotos : albumNumPhotos * -1)
-    // })
-
-    const collection = req.params.collection;
     const curr = (await db.collection('photo_metadata').doc('collections').get()).data();
 
     if (typeof curr === 'object') {
       const selected = curr[collection]['album'] === key;
 
-      if (curr[collection].selected) {
+      if (curr[collection].selected || collection === 'homepage') {
         albums[key].selected += selected ? -1 : 1;
       }
       
@@ -229,15 +238,10 @@ app.put('/album-click/:id/:collection', async (req, res) => {
       });
     }
 
-    // albums['selected'] = key;
-    // await db.collection(`photo_metadata`).doc('albums').update({
-    //   [key]: albums[key]
-    // });
-    res.json(albums);
+    const token = await adobeSession.apiToken();
+    await getAssets(token);
 
-    const token = await adobeSession.apiToken(db);
-    
-    await getAssets(token, db);
+    res.json(albums);
     console.log('Successfully altered albums');
   } else {
     console.error('Unexpected error occured when accessing albums metadata');
@@ -250,11 +254,12 @@ app.put('/collection-click/:collection', async (req, res) => {
         console.error('Not authorized');
         return;
     }
-  const token = await auth.adobe_token(req, res, db);
+  const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
   const collections = (await db.collection(`photo_metadata`).doc('collections').get()).data();
+  console.log(`Changing collection ${key}`)
 
   if (typeof collections === 'object') {
     if (!(key in collections)) {
@@ -264,28 +269,23 @@ app.put('/collection-click/:collection', async (req, res) => {
 
     console.log(collections[key].selected);
     collections[key].selected = !collections[key].selected;
-    // const albumNumPhotos = Object.values(collections[key].photos).length;
-
-    // await db.collection(`photo_metadata`).doc('catalog').update({
-    //   ['sel_photos']: FieldValue.increment(collections[key].selected ? albumNumPhotos : albumNumPhotos * -1)
-    // })
 
     await db.collection(`photo_metadata`).doc('collections').update({
       [key]: collections[key]
     });
     
     if (collections[key].album != '') {
+      const token = await adobeSession.apiToken();
+      await getAssets(token);
+      await fetchRenditions(token, collections[key].album, '');
+
       await db.collection('photo_metadata').doc('albums').update({
         [`${collections[key].album}.selected`]: FieldValue.increment(collections[key].selected ? 1 : -1)
       })
     }
-
-    res.json(collections);
-
-    const token = await adobeSession.apiToken(db);
     
-    await getAssets(token, db);
     console.log('Successfully altered albums');
+    res.json(collections);
   } else {
     console.error('Unexpected error occured when accessing albums metadata');
   }
@@ -314,7 +314,7 @@ app.put('/add-collection/:collection', async (req, res) => {
       console.error('Not authorized');
       return;
   }
-  const token = await auth.adobe_token(req, res, db);
+  const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
@@ -349,7 +349,7 @@ app.put('/del-collection/:collection', async (req, res) => {
         console.error('Not authorized');
         return;
     }
-  const token = await auth.adobe_token(req, res, db);
+  const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
@@ -378,7 +378,7 @@ app.put('/del-collection/:collection', async (req, res) => {
 })
 
 app.get('/photos/:collection', async (req, res) => {
-  const token = await auth.adobe_token(req, res, db);
+  const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
   const collection = req.params.collection;
@@ -388,7 +388,7 @@ app.get('/photos/:collection', async (req, res) => {
     return;
   }
   const album = collections[collection].album;
-  const photoUrls = await fetchRenditions(token, db, album, '2048');
+  const photoUrls = await fetchRenditions(token, album, '2048');
   res.json(photoUrls);
   console.log('Successfully fetched photos');
 });
@@ -413,11 +413,11 @@ app.put('/reorder-photos/:album', async (req, res) => {
 })
 
 app.get('/thumbnails/:album', async (req, res) => {
-  const token = await auth.adobe_token(req, res, db);
+  const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
   const album = req.params.album;
-  const urls = await fetchRenditions(token, db, album, 'thumbnail2x');
+  const urls = await fetchRenditions(token, album, 'thumbnail2x');
   res.json(urls);
   console.log('Successfully fetched thumbnail urls');
 })
@@ -428,7 +428,7 @@ app.put('/thumbnail-click/:collection/:thumbnail', async (req, res) => {
       console.error('Not authorized');
       return;
   }
-  const token = await auth.adobe_token(req, res, db);
+  const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
@@ -464,3 +464,5 @@ app.put('/thumbnail-click/:collection/:thumbnail', async (req, res) => {
     console.error('Unexpected error occured when accessing collections metadata');
   }
 })
+
+export { db, admin };

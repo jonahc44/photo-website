@@ -1,8 +1,6 @@
 import axios from 'axios'
 import dotenv from 'dotenv'
-import { Firestore } from 'firebase-admin/firestore'
-import fs from 'fs'
-import path from 'path'
+import { db } from '../server'
 dotenv.config();
 
 interface Asset {
@@ -34,7 +32,7 @@ interface AssetRes {
     resources: [Asset]
 };
 
-export const getAssets = async (token: string, db: Firestore) => {
+export const getAssets = async (token: string) => {
     const secrets = JSON.parse(process.env.SECRETS as string);
     const catalog = await db.collection('photo_metadata').doc('catalog').get();
     const catHref = await catalog.get('href');
@@ -63,28 +61,6 @@ export const getAssets = async (token: string, db: Firestore) => {
                     const key = `asset_${asset.id}`;
 
                     if (!(key in album.photos)) {
-                        // try {
-                        //     await axios.head<string>(`${baseUrl}${asset.links.self.href}/renditions/fullsize`, {
-                        //         headers: {
-                        //             'X-API-Key': `${process.env.ADOBE_ID}`,
-                        //             'Authorization': `Bearer ${token}`
-                        //         }
-                        //     });
-                        // } catch (err) {
-                        //     try {
-                        //         await axios.post(`${baseUrl}${asset.links.self.href}/renditions`, '', {
-                        //             headers: {
-                        //                 'X-API-Key': `${process.env.ADOBE_ID}`,
-                        //                 'Authorization': `Bearer ${token}`,
-                        //                 'X-Generate-Renditions': 'fullsize'
-                        //             }
-                        //         })
-                        //     } catch (err2) {
-                        //         console.log('Error creating fullsize rendition');
-                        //         console.log(err2);
-                        //     }
-                        // }
-
                         album.photos[key] = {
                             href: asset.links.self.href,
                             url: '',

@@ -1,4 +1,5 @@
 import { createFileRoute, redirect, Link } from '@tanstack/react-router'
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { auth, authInitializedPromise } from '@/main'
 import { signInWithCustomToken, signOut } from 'firebase/auth'
@@ -94,11 +95,43 @@ function Index() {
   const Home: React.FC = () => {
     const [editing, setEditing] = useState(false);
     
+    // const refreshMutation = useMutation({
+    //   mutationFn: async () => {
+    //     const token = await auth.currentUser?.getIdToken();
+    //     const response = await fetch(`${apiUrl}/refresh-all`, {
+    //       method: 'POST',
+    //       headers: {
+    //         'Authorization': `Bearer ${token}`,
+    //         'Content-Type': 'application/json'
+    //       }
+    //     });
+        
+    //     if (!response.ok) {
+    //       throw new Error('Failed to refresh data');
+    //     }
+        
+    //     return response.json();
+    //   },
+    //   onSuccess: () => {
+    //     alert("Refresh successful!");
+    //   },
+    //   onError: (error) => {
+    //     console.error(error);
+    //     alert("Failed to refresh.");
+    //   }
+    // });
 
     return (
       <div>
         <button onClick={() => setEditing(true)}
         className='m-7 p-1 text-2xl border-4 hover:cursor-pointer'>Edit Photos</button>
+        {/* <button 
+            onClick={() => refreshMutation.mutate()}
+            disabled={refreshMutation.isPending}
+            className='p-1 text-2xl border-4 hover:cursor-pointer hover:text-gray-600 hover:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed'
+          >
+            {refreshMutation.isPending ? 'Refreshing...' : 'Refresh All'}
+          </button> */}
         <Albums activeColl={activeColl} />
         {editing && (
           <div>

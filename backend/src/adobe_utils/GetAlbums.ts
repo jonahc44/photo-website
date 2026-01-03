@@ -1,8 +1,6 @@
 import axios from 'axios'
 import dotenv from 'dotenv'
-import fs from 'fs'
-import path from 'path'
-import { Firestore } from 'firebase-admin/firestore';
+import { db } from '../server';
 dotenv.config();
 
 interface Album {
@@ -21,7 +19,7 @@ interface AlbumRes {
     resources: [Album]
 };
 
-export const getAlbums = async (token: string, db: Firestore) => {
+export const getAlbums = async (token: string) => {
     const secrets = JSON.parse(process.env.SECRETS as string);
     const catalog = await db.collection(`photo_metadata`).doc('catalog').get();
     const catHref = await catalog.get('href');

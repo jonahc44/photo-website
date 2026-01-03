@@ -4,6 +4,7 @@ import { auth, firestore } from 'firebase-admin'
 import axios from 'axios'
 import crypto from 'crypto'
 import qs from 'querystring'
+import { db } from './server'
 
 interface TokenResponse {
   access_token: string,
@@ -46,9 +47,9 @@ export async function decodeToken(req: Request, res: Response, auth: auth.Auth) 
   }
 }
 
-export const adobe_token = async (req: Request, res: Response, db: firestore.Firestore) => {
+export const adobe_token = async (req: Request, res: Response) => {
     if (req.session.auth == 0) return 'error';
-    const token = await adobeSession.apiToken(db);
+    const token = await adobeSession.apiToken();
     return token;
 }
 
@@ -79,7 +80,7 @@ export const get_auth = async (req: Request, res: Response, auth: auth.Auth) => 
     }
 }
 
-export const callback = async (req: Request, res: Response, auth: auth.Auth, db: firestore.Firestore) => {
+export const callback = async (req: Request, res: Response, auth: auth.Auth) => {
     const { code, state, error } = req.query;
 
     if (error) {
@@ -141,7 +142,7 @@ export const callback = async (req: Request, res: Response, auth: auth.Auth, db:
         });
 
         console.log(`Successfully minted Firebase custom token for Adobe user`);
-        await adobeSession.createSession(accessToken, refreshToken, expiryTime, db);
+        await adobeSession.createSession(accessToken, refreshToken, expiryTime);
         res.redirect(`https://localhost:4000/#token=${firebaseCustomToken}`);
         // res.header({ firebaseCustomToken });
       } catch (error: any) {

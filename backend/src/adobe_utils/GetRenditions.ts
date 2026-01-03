@@ -1,10 +1,10 @@
 import axios from 'axios'
-import { Response } from 'express'
 import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
 import * as admin from 'firebase-admin'
 import { File } from '@google-cloud/storage';
+import { db } from '../server'
 // import serviceAccount from '../serviceAccountKey.json'
 dotenv.config();
 
@@ -22,7 +22,7 @@ interface Album {
     }
 }
 
-export const fetchRenditions = async (token: string, db: admin.firestore.Firestore, currAlbum: string, type: string) => {
+export const fetchRenditions = async (token: string, currAlbum: string, type: string) => {
     const secrets = JSON.parse(process.env.SECRETS as string);
     
     if (!admin.apps.length){
