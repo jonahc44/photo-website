@@ -23,6 +23,8 @@ jobs:
         run: |
           npm ci
           npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       # --- 2. BUILD ADMIN PANEL ---
       - name: Install & Build Admin Panel
@@ -30,6 +32,8 @@ jobs:
         run: |
           npm ci
           npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       # --- 3. DEPLOY TO FIREBASE HOSTING ---
       - name: Deploy Hosting Only
