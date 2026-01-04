@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import React from 'react'
 import { Footer } from '@/Footer';
 import { HeaderController } from '@/Header';
-import { fetchPhotos } from '@/firebase';
+import { fetchPhotos } from '@/config';
 import '../global.css'
 
 type Photo = {

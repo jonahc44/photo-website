@@ -1,7 +1,13 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, getDoc, doc } from 'firebase/firestore';
+
+type Photo = {
+  url: string,
+  thumbnail: string,
+  index: number
+}
 
 export const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:5000";
 
@@ -21,3 +27,30 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const db = getFirestore(app);
+
+export const fetchPhotos = async (coll: string): Promise<Photo[]> => {
+  try {
+    const collRef = doc(db, 'photo_metadata', 'collections');
+    const collSnapshot = await getDoc(collRef);
+
+    if (collSnapshot.exists()) {
+      const albumKey = collSnapshot.data()[coll]?.album;
+      
+      if (!albumKey) return [];
+
+      const albumRef = doc(db, 'photo_metadata', 'albums');
+      const snapshot = await getDoc(albumRef);
+      
+      if (snapshot.exists()) {
+        const photos = snapshot.data()[albumKey]?.photos || [];
+        const photosArray = Object.values(photos) as Photo[];
+        console.log(photosArray);
+        return photosArray;
+      }
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching photos:", error);
+    return [];
+  }
+}
