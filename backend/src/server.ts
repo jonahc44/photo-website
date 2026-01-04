@@ -84,18 +84,25 @@ const db = admin.firestore();
 const app = express();
 const PORT = process.env.PORT;
 
-app.use(cors({
-  credentials: true,
-  origin: [
+const allowedOrigins = [
+  'https://adobeid-na1.services.adobe.com',
+  'https://auth.services.adobe.com',
+  'https://photo-admin-3b694.firebaseapp.com'
+];
+
+if (process.env.ENV === 'dev') {
+  allowedOrigins.push(
     'http://localhost:4000',
     'http://localhost:3000',
     'https://localhost:4000',
     'https://localhost:3000',
-    'https://localhost:5000',
-    'https://adobeid-na1.services.adobe.com',
-    'https://auth.services.adobe.com',
-    'https://photo-admin-3b694.firebaseapp.com'
-  ]
+    'https://localhost:5000'
+  );
+}
+
+app.use(cors({
+  credentials: true,
+  origin: allowedOrigins
 }));
 
 app.use(session({
