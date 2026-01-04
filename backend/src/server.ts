@@ -93,7 +93,8 @@ app.use(cors({
     'https://localhost:3000',
     'https://localhost:5000',
     'https://adobeid-na1.services.adobe.com',
-    'https://auth.services.adobe.com'
+    'https://auth.services.adobe.com',
+    'https://photo-admin-3b694.firebaseapp.com'
   ]
 }));
 
