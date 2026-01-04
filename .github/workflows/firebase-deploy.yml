@@ -35,12 +35,22 @@ jobs:
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
-      # --- 3. DEPLOY TO FIREBASE HOSTING ---
-      - name: Deploy Hosting Only
+      # --- 3a. DEPLOY PUBLIC SITE ---
+      - name: Deploy Photo Site
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
           channelId: live
           projectId: photo-website-f20b9
-          target: photo-site,admin-panel
+          target: photo-site
+
+      # --- 3b. DEPLOY ADMIN PANEL ---
+      - name: Deploy Admin Panel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          channelId: live
+          projectId: photo-website-f20b9
+          target: admin-site
