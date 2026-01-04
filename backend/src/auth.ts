@@ -143,7 +143,7 @@ export const callback = async (req: Request, res: Response, auth: auth.Auth) => 
 
         console.log(`Successfully minted Firebase custom token for Adobe user`);
         await adobeSession.createSession(accessToken, refreshToken, expiryTime);
-        res.redirect(`https://localhost:4000/#token=${firebaseCustomToken}`);
+        res.redirect(`https://https://photo-admin-3b694.web.app/#token=${firebaseCustomToken}`);
         // res.header({ firebaseCustomToken });
       } catch (error: any) {
         console.error('Error minting Firebase custom token:', error.message);
