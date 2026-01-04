@@ -200,7 +200,7 @@ type ThumbnailProps = {
 };
 
 export const Thumbnail: React.FC<ThumbnailProps> = ({collectionKey, setThumbnail}) => {
-    const { status, data: collections, error } = useQuery({
+    const { data: collections } = useQuery({
         queryKey: ['collections'],
         queryFn: () => fetchCollections(collectionKey === 'homepage')
     });

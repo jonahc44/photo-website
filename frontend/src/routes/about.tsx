@@ -34,7 +34,7 @@ function About() {
         <HeaderController />
       </header>
       
-      <main className='text-3xl text-onyx pt-45 flex flex-col flex-grow items-center w-full max-w-4xl mx-auto px-4'>
+      <main className='text-3xl text-onyx pt-45 flex flex-col grow items-center w-full max-w-4xl mx-auto px-4'>
         <h1 className='text-7xl font-semibold pb-10'>About</h1>
 
         {isLoading ? (
