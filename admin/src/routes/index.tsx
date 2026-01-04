@@ -8,19 +8,23 @@ import Thumbnail from '@/Thumbnails'
 import Collections from '@/Collections'
 import About from '@/About'
 import { apiUrl } from '@/config'
+import { z } from 'zod'
+
+const searchSchema = z.object({
+  token: z.string().optional(),
+  redirect: z.string().optional(),
+})
 
 export const Route = createFileRoute('/')({
   component: Index,
-  beforeLoad: async ({ location }) => {
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1));
-    const customToken = params.get('token');
+  validateSearch: (search) => searchSchema.parse(search),
+  beforeLoad: async ({ location, search }) => {
+    const customToken = search.token;
 
     if (customToken) {
       console.log('Found custom token, signing in with it...');
       try {
         await signInWithCustomToken(auth, customToken);
-        window.location.hash = '';
       } catch (err) {
         console.log('Error when logging in with custom token');
       }
