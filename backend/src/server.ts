@@ -7,9 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import cors from 'cors'
 import session from 'express-session'
-import subdomain from 'express-subdomain'
 import * as admin from 'firebase-admin'
-import { FirestoreStore } from '@google-cloud/connect-firestore'
 import * as auth from './auth'
 import { fetchRenditions } from './adobe_utils/GetRenditions'
 import { getAlbums } from './adobe_utils/GetAlbums'
@@ -61,9 +59,15 @@ const secrets = JSON.parse(process.env.SECRETS as string);
 
 if (!admin.apps.length){
     if (process.env.ENV == 'dev') {
+      console.log('Running on dev, starting emulators...');
+      process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+      process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
+      process.env.FIREBASE_STORAGE_EMULATOR_HOST = 'localhost:9199';
+
       console.log('Operating in dev environment');
       const serviceAccountPath = path.resolve(process.cwd(), 'src', 'serviceAccountKey.json');
       const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+
       admin.initializeApp({
           projectId: process.env.FIREBASE_ID,
           storageBucket: process.env.FIREBASE_BUCKET,

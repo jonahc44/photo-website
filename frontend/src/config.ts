@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getStorage } from 'firebase/storage';
-import { getFirestore, getDoc, doc } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { getFirestore, getDoc, doc, connectFirestoreEmulator } from 'firebase/firestore';
 
 type Photo = {
   url: string,
@@ -27,6 +27,14 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const db = getFirestore(app);
+
+if (window.location.hostname === "localhost") {
+  console.log("Running in development mode: Connecting to emulators");
+  
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectStorageEmulator(storage, 'localhost', 9199);
+  connectAuthEmulator(auth, 'http://localhost:9099');
+}
 
 export const fetchPhotos = async (coll: string): Promise<Photo[]> => {
   try {
