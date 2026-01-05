@@ -1,6 +1,7 @@
 import axios from 'axios'
 import dotenv from 'dotenv'
 import { db } from '../server'
+import { getCatalog } from './GetCatalog'
 dotenv.config();
 
 interface Asset {
@@ -34,8 +35,7 @@ interface AssetRes {
 
 export const getAssets = async (token: string) => {
     const secrets = JSON.parse(process.env.SECRETS as string);
-    const catalog = await db.collection('photo_metadata').doc('catalog').get();
-    const catHref = await catalog.get('href');
+    const catHref = await getCatalog(token);
     const baseUrl = `https://lr.adobe.io/v2/${catHref}/`;
     const albums = (await db.collection('photo_metadata').doc('albums').get()).data();
 
@@ -46,9 +46,10 @@ export const getAssets = async (token: string) => {
             if (album.selected > 0) {
                 const url = `${baseUrl}${album.href}/assets`;
 
+                const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
                 const response = await axios.get<string>(url, {
                     headers: {
-                        'X-API-Key': `${secrets.adobe_id}`,
+                        'X-API-Key': clientId,
                         'Authorization': `Bearer ${token}`
                     }
                 });

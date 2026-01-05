@@ -209,7 +209,8 @@ app.get('/get-collections', async (req, res) => {
   const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
-  const collections = (await db.collection('photo_metadata').doc('collections').get()).data();
+  const collFetch = await db.collection('photo_metadata').doc('collections').get();
+  const collections = collFetch.exists ? collFetch.data() : {};
 
   res.json(collections);
   console.log('Successfully fetched collections');
@@ -283,7 +284,8 @@ app.put('/collection-click/:collection', async (req, res) => {
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
-  const collections = (await db.collection(`photo_metadata`).doc('collections').get()).data();
+  const collFetch = await db.collection('photo_metadata').doc('collections').get();
+  const collections = collFetch.exists ? collFetch.data() : {};
   console.log(`Changing collection ${key}`)
 
   if (typeof collections === 'object') {
@@ -343,7 +345,8 @@ app.put('/add-collection/:collection', async (req, res) => {
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
-  const collections = (await db.collection(`photo_metadata`).doc('collections').get()).data();
+  const collFetch = await db.collection('photo_metadata').doc('collections').get();
+  const collections = collFetch.exists ? collFetch.data() : {};
 
   if (typeof collections === 'object') {
     if (key in collections) {
@@ -359,9 +362,9 @@ app.put('/add-collection/:collection', async (req, res) => {
       index: numColl
     }
 
-    await db.collection('photo_metadata').doc('collections').update({
+    await db.collection('photo_metadata').doc('collections').set({
       [key]: collections[key]
-    })
+    }, { merge: true });
     res.json(collections);
   } else {
     console.error('Unexpected error occured when accessing collections metadata');
@@ -378,7 +381,8 @@ app.put('/del-collection/:collection', async (req, res) => {
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
-  const collections = (await db.collection(`photo_metadata`).doc('collections').get()).data();
+  const collFetch = await db.collection('photo_metadata').doc('collections').get();
+  const collections = collFetch.exists ? collFetch.data() : {};
 
   if (typeof collections === 'object') {
     if (!(key in collections)) {

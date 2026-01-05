@@ -5,6 +5,7 @@ import path from 'path'
 import * as admin from 'firebase-admin'
 import { File } from '@google-cloud/storage';
 import { db } from '../server'
+import { getCatalog } from './GetCatalog'
 // import serviceAccount from '../serviceAccountKey.json'
 dotenv.config();
 
@@ -40,8 +41,7 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
     }
     
     const bucket = admin.storage().bucket();
-    const catalog = await db.collection('photo_metadata').doc('catalog').get();
-    const catHref = await catalog.get('href');
+    const catHref = await getCatalog(token);
     const baseUrl = `https://lr.adobe.io/v2/${catHref}/`;
     
     let albums = (await db.collection('photo_metadata').doc('albums').get()).data();
@@ -68,10 +68,11 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
                     const [exists] = await file.exists();
 
                     if (!exists) {
+                        const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
                         const response = await axios.get(`${baseUrl}${href}/renditions/${type}`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
-                                'X-API-Key': secrets.adobe_id,
+                                'X-API-Key': clientId,
                                 'Accept': 'image/jpeg',
                                 'Cache-Control': 'max-age=1800000'
                             },
