@@ -195,9 +195,23 @@ app.get('/get-albums/:collection', async (req, res) => {
 
   if (typeof albums === 'object') {
     const collection = req.params.collection;
-    const data = (await db.collection('photo_metadata').doc('collections').get()).data();
+
+    const dataFetch = await db.collection('photo_metadata').doc('collections').get();
+    let data = dataFetch.exists ? dataFetch.data() : {};
+
     if (typeof data === 'object') {
-      albums['selected'] = data[collection]['album'];
+      if (collection === 'homepage' && !(collection in data)) {
+        console.log('Homepage has not been added yet, now adding to collections...');
+        await db.collection('photo_metadata').doc('collections').set({
+          ['homepage']: {
+            'album': '',
+            'num_photos': 0
+          }
+        });
+        data = (await db.collection('photo_metadata').doc('collections').get()).data();
+      }
+
+      if (typeof data === 'object') albums['selected'] = data[collection]['album'];
     }
   }
   
@@ -242,7 +256,8 @@ app.put('/album-click/:id/:collection', async (req, res) => {
     const albumNumPhotos = Object.values(albums[key].photos).length;
     console.log(albumNumPhotos);
 
-    const curr = (await db.collection('photo_metadata').doc('collections').get()).data();
+    const currFetch = await db.collection('photo_metadata').doc('collections').get();
+    const curr = currFetch.exists ? currFetch.data() : {};
 
     if (typeof curr === 'object') {
       const selected = curr[collection]['album'] === key;
