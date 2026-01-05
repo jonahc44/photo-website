@@ -253,22 +253,34 @@ app.put('/album-click/:id/:collection', async (req, res) => {
       return;
     }
 
-    const albumNumPhotos = Object.values(albums[key].photos).length;
-    console.log(albumNumPhotos);
-
     const currFetch = await db.collection('photo_metadata').doc('collections').get();
     const curr = currFetch.exists ? currFetch.data() : {};
-
+    console.log(key)
     if (typeof curr === 'object') {
-      const selected = curr[collection]['album'] === key;
+      const currSel = curr[collection]['album'];
+      const selected = currSel === key;
 
-      if (curr[collection].selected || collection === 'homepage') {
-        albums[key].selected += selected ? -1 : 1;
+      if (selected) {
+        albums[key].collection = '';
+      } else {
+        console.log(currSel);
+        albums[key].collection = collection;
+        if (typeof albums[currSel] === 'object') albums[currSel].collection = '';
       }
-      
-      await db.collection('photo_metadata').doc('albums').update({
+
+      const albumData = {
         [key]: albums[key]
-      });
+      };
+      
+      if (typeof albums[currSel] === 'object') {
+        albumData[currSel] = '';
+      }
+
+      await db.collection('photo_metadata').doc('albums').set(albumData, { 'merge': true });
+
+      await getAssets(token);
+      const albumNumPhotos = (await fetchRenditions(token, key, '2048')).length;
+      console.log(albumNumPhotos);
 
       await db.collection('photo_metadata').doc('collections').update({
         [collection]: {
@@ -277,10 +289,6 @@ app.put('/album-click/:id/:collection', async (req, res) => {
         }
       });
     }
-
-    const token = await adobeSession.apiToken();
-    await getAssets(token);
-    await fetchRenditions(token, key, '2048');
 
     res.json(albums);
     console.log('Successfully altered albums');

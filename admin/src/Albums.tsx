@@ -59,51 +59,39 @@ export const updateAlbum = async (href: string) => {
 }
 
 type AlbumsProps = { activeColl: string };
-export const Albums: React.FC<AlbumsProps> = ({activeColl}) => {
+export const Albums: React.FC<AlbumsProps> = ({ activeColl }) => {
     const queryClient = useQueryClient();
+    
     const { status, data: albums, error } = useQuery({
-      queryKey: ['albums'],
+      queryKey: ['albums', activeColl],
       queryFn: () => fetchAlbums(activeColl)
     });
 
     const mutation = useMutation({
-      mutationFn: (href: string) => updateAlbum(href),
-      onSettled: () => queryClient.invalidateQueries()
-    })
+      mutationFn: (id: string) => updateAlbum(`${id}/${activeColl}`),
+      onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: ['albums', activeColl] });
+      }
+    });
 
-    const [activeId, setId] = useState('');
-
-    if (status === 'pending') {
-      return <div>Loading...</div>
-    }
-
-    if (status === 'error') {
-      return <div>Error: {error.message}</div>
-    }
-
-    console.log(albums);
+    if (status === 'pending') return <div>Loading...</div>
+    if (status === 'error') return <div>Error: {error.message}</div>
 
     return (
       <div className='p-5'>
+        {mutation.isPending && <div className="text-sm text-gray-500 mb-2">Syncing...</div>}
+
         {albums.map((album: Album) => (
           <div key={album.id}>
-            <label>
+            <label className={`flex items-center space-x-2 ${mutation.isPending ? 'opacity-50' : ''}`}>
               <input
-                className='mx-2 disabled:opacity-50 disabled:cursor-not-allowed'
+                className='mx-2 cursor-pointer disabled:cursor-not-allowed'
                 type='checkbox'
                 disabled={mutation.isPending}
                 checked={album.selected}
                 onChange={() => {
-                  mutation.mutate(`${album.id}/${activeColl}`);
-                  
-                  if (activeId === album.id) {
-                    setId('');
-                  } else {
-                    if (activeId != '') mutation.mutate(`${activeId}/${activeColl}`);
-                    setId(album.id);
-                  }
-                }
-              }
+                   mutation.mutate(album.id);
+                }}
               />
               {album.name}
             </label>

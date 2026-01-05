@@ -12,7 +12,7 @@ dotenv.config();
 interface Album {
     name: string,
     href: string,
-    selected: number,
+    collection: string,
     photos: {
         [key: string]: {
             href: string,
@@ -48,7 +48,7 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
     let allData: any[] = [];
     for (const albumKey in albums) {
         const album = albums[albumKey] as Album;
-        if (album.selected > 0 && albumKey === currAlbum) {
+        if (album.collection !== '' && albumKey === currAlbum) {
             const keys = Object.keys(album.photos);
             const photos = album.photos;
 

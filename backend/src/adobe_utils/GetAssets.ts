@@ -18,7 +18,7 @@ interface Asset {
 interface Album {
     name: string,
     href: string,
-    selected: number,
+    collection: string,
     photos: {
         [key: string]: {
             href: string,
@@ -43,7 +43,8 @@ export const getAssets = async (token: string) => {
         for (const albumKey in albums) {
             let numPhotos = 0;
             const album = albums[albumKey] as Album;
-            if (album.selected > 0) {
+            
+            if (album.collection !== '') {
                 const url = `${baseUrl}${album.href}/assets`;
 
                 const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;

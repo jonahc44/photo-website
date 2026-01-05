@@ -47,7 +47,7 @@ export const getAlbums = async (token: string) => {
                 albums[key] = {
                     name: album.payload.name,
                     href: album.links.self.href,
-                    selected: 0,
+                    collection: '',
                     photos: {}
                 }
             }
