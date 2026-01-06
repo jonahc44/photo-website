@@ -40,10 +40,11 @@ export const getAssets = async (token: string) => {
     const albums = (await db.collection('photo_metadata').doc('albums').get()).data();
 
     if (typeof albums === 'object') {
-        for (const albumKey in albums) {
+        
+        for (const albumData of Object.values(albums)) {
             let numPhotos = 0;
-            const album = albums[albumKey] as Album;
-            
+            const album = albumData as Album;
+
             if (album.collection !== '') {
                 const url = `${baseUrl}${album.href}/assets`;
 

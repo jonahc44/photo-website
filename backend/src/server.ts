@@ -255,7 +255,7 @@ app.put('/album-click/:id/:collection', async (req, res) => {
 
     const currFetch = await db.collection('photo_metadata').doc('collections').get();
     const curr = currFetch.exists ? currFetch.data() : {};
-    console.log(key)
+
     if (typeof curr === 'object') {
       const currSel = curr[collection]['album'];
       const selected = currSel === key;
@@ -263,7 +263,6 @@ app.put('/album-click/:id/:collection', async (req, res) => {
       if (selected) {
         albums[key].collection = '';
       } else {
-        console.log(currSel);
         albums[key].collection = collection;
         if (typeof albums[currSel] === 'object') albums[currSel].collection = '';
       }
@@ -272,8 +271,9 @@ app.put('/album-click/:id/:collection', async (req, res) => {
         [key]: albums[key]
       };
       
-      if (typeof albums[currSel] === 'object') {
-        albumData[currSel] = '';
+      if (currSel && currSel !== key && typeof albums[currSel] === 'object') {
+        albumData[currSel] = albums[currSel]; 
+        albumData[currSel].collection = '';
       }
 
       await db.collection('photo_metadata').doc('albums').set(albumData, { 'merge': true });

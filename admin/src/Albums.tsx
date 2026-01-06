@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
 import { auth } from '@/main'
 import { apiUrl } from './config'
 
@@ -7,7 +6,7 @@ export interface Album {
   id: string,
   name: string,
   href: string,
-  selected: boolean,
+  collection: string,
   photos: {
       [key: string]: {
         name: string,
@@ -33,13 +32,15 @@ export const fetchAlbums = async (activeColl: string) => {
     }
     
     const resJson = await response.json();
-    return Object.entries(resJson).map(([key, value]: [string, any]) => ({
+    const albumsArray = Object.entries(resJson).map(([key, value]: [string, any]) => ({
       id: key,
       name: value.name,
       href: value.href,
-      selected: key === resJson['selected'],
+      collection: value.collection,
       photos: value.photos
-    }) as Album).slice(0, -1);
+    }) as Album).filter(album => album.name !== undefined);
+
+    return albumsArray.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export const updateAlbum = async (href: string) => {
@@ -77,10 +78,15 @@ export const Albums: React.FC<AlbumsProps> = ({ activeColl }) => {
     if (status === 'pending') return <div>Loading...</div>
     if (status === 'error') return <div>Error: {error.message}</div>
 
+    const currentAlbum = albums.find((a: Album) => a.collection === activeColl);
+    console.log(activeColl);
+
     return (
       <div className='p-5'>
         {mutation.isPending && <div className="text-sm text-gray-500 mb-2">Syncing...</div>}
-
+        <p className='p-1 mb-3 h-min text-2xl'>
+          Currently Selected: <span className="font-bold">{currentAlbum ? currentAlbum.name : 'None'}</span>
+        </p>
         {albums.map((album: Album) => (
           <div key={album.id}>
             <label className={`flex items-center space-x-2 ${mutation.isPending ? 'opacity-50' : ''}`}>
@@ -88,7 +94,7 @@ export const Albums: React.FC<AlbumsProps> = ({ activeColl }) => {
                 className='mx-2 cursor-pointer disabled:cursor-not-allowed'
                 type='checkbox'
                 disabled={mutation.isPending}
-                checked={album.selected}
+                checked={album === currentAlbum}
                 onChange={() => {
                    mutation.mutate(album.id);
                 }}
