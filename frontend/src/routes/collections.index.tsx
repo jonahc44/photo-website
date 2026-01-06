@@ -83,7 +83,7 @@ const AllCollections = () => {
   //   }
   // }
 
-  if (Object.values(collections).length === 0) {
+  if (Object.values(visibleCollections).length === 0) {
     console.log('No collections have been selected');
     return (
       <div className="flex flex-col place-items-center text-2xl first:pt-50 last:pb-20">
