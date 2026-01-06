@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
 import { auth } from '@/main'
 import { apiUrl } from './config'
 
@@ -7,7 +6,7 @@ export interface Album {
   id: string,
   name: string,
   href: string,
-  selected: boolean,
+  collection: string,
   photos: {
       [key: string]: {
         name: string,
@@ -33,13 +32,15 @@ export const fetchAlbums = async (activeColl: string) => {
     }
     
     const resJson = await response.json();
-    return Object.entries(resJson).map(([key, value]: [string, any]) => ({
+    const albumsArray = Object.entries(resJson).map(([key, value]: [string, any]) => ({
       id: key,
       name: value.name,
       href: value.href,
-      selected: key === resJson['selected'],
+      collection: value.collection,
       photos: value.photos
-    }) as Album).slice(0, -1);
+    }) as Album).filter(album => album.name !== undefined);
+
+    return albumsArray.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export const updateAlbum = async (href: string) => {
@@ -59,51 +60,44 @@ export const updateAlbum = async (href: string) => {
 }
 
 type AlbumsProps = { activeColl: string };
-export const Albums: React.FC<AlbumsProps> = ({activeColl}) => {
+export const Albums: React.FC<AlbumsProps> = ({ activeColl }) => {
     const queryClient = useQueryClient();
+    
     const { status, data: albums, error } = useQuery({
-      queryKey: ['albums'],
+      queryKey: ['albums', activeColl],
       queryFn: () => fetchAlbums(activeColl)
     });
 
     const mutation = useMutation({
-      mutationFn: (href: string) => updateAlbum(href),
-      onSettled: () => queryClient.invalidateQueries()
-    })
+      mutationFn: (id: string) => updateAlbum(`${id}/${activeColl}`),
+      onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: ['albums', activeColl] });
+      }
+    });
 
-    const [activeId, setId] = useState('');
+    if (status === 'pending') return <div>Loading...</div>
+    if (status === 'error') return <div>Error: {error.message}</div>
 
-    if (status === 'pending') {
-      return <div>Loading...</div>
-    }
-
-    if (status === 'error') {
-      return <div>Error: {error.message}</div>
-    }
-
-    console.log(albums);
+    const currentAlbum = albums.find((a: Album) => a.collection === activeColl);
+    console.log(activeColl);
 
     return (
       <div className='p-5'>
+        {mutation.isPending && <div className="text-sm text-gray-500 mb-2">Syncing...</div>}
+        <p className='p-1 mb-3 h-min text-2xl'>
+          Currently Selected: <span className="font-bold">{currentAlbum ? currentAlbum.name : 'None'}</span>
+        </p>
         {albums.map((album: Album) => (
           <div key={album.id}>
-            <label>
+            <label className={`flex items-center space-x-2 ${mutation.isPending ? 'opacity-50' : ''}`}>
               <input
-                className='mx-2 disabled:opacity-50 disabled:cursor-not-allowed'
+                className='mx-2 cursor-pointer disabled:cursor-not-allowed'
                 type='checkbox'
                 disabled={mutation.isPending}
-                checked={album.selected}
+                checked={album === currentAlbum}
                 onChange={() => {
-                  mutation.mutate(`${album.id}/${activeColl}`);
-                  
-                  if (activeId === album.id) {
-                    setId('');
-                  } else {
-                    if (activeId != '') mutation.mutate(`${activeId}/${activeColl}`);
-                    setId(album.id);
-                  }
-                }
-              }
+                   mutation.mutate(album.id);
+                }}
               />
               {album.name}
             </label>

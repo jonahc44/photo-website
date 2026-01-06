@@ -320,7 +320,14 @@ const Collections: React.FC<CollectionsProps> = ({setColl, activeColl}) => {
         value={value}
         className="m-5 p-2 border-3 border-black"
         onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            addMutation.mutate(`${value}`);
+            setValue('');
+          }
+        }}
         onBlur={() => {
+          if (!value) return;
           addMutation.mutate(`${value}`);
           setValue('');
         }}

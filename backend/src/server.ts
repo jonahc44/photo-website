@@ -7,9 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import cors from 'cors'
 import session from 'express-session'
-import subdomain from 'express-subdomain'
 import * as admin from 'firebase-admin'
-import { FirestoreStore } from '@google-cloud/connect-firestore'
 import * as auth from './auth'
 import { fetchRenditions } from './adobe_utils/GetRenditions'
 import { getAlbums } from './adobe_utils/GetAlbums'
@@ -61,9 +59,15 @@ const secrets = JSON.parse(process.env.SECRETS as string);
 
 if (!admin.apps.length){
     if (process.env.ENV == 'dev') {
+      console.log('Running on dev, starting emulators...');
+      process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+      process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
+      process.env.FIREBASE_STORAGE_EMULATOR_HOST = 'localhost:9199';
+
       console.log('Operating in dev environment');
       const serviceAccountPath = path.resolve(process.cwd(), 'src', 'serviceAccountKey.json');
       const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+
       admin.initializeApp({
           projectId: process.env.FIREBASE_ID,
           storageBucket: process.env.FIREBASE_BUCKET,
@@ -191,9 +195,23 @@ app.get('/get-albums/:collection', async (req, res) => {
 
   if (typeof albums === 'object') {
     const collection = req.params.collection;
-    const data = (await db.collection('photo_metadata').doc('collections').get()).data();
+
+    const dataFetch = await db.collection('photo_metadata').doc('collections').get();
+    let data = dataFetch.exists ? dataFetch.data() : {};
+
     if (typeof data === 'object') {
-      albums['selected'] = data[collection]['album'];
+      if (collection === 'homepage' && !(collection in data)) {
+        console.log('Homepage has not been added yet, now adding to collections...');
+        await db.collection('photo_metadata').doc('collections').set({
+          ['homepage']: {
+            'album': '',
+            'num_photos': 0
+          }
+        });
+        data = (await db.collection('photo_metadata').doc('collections').get()).data();
+      }
+
+      if (typeof data === 'object') albums['selected'] = data[collection]['album'];
     }
   }
   
@@ -205,7 +223,8 @@ app.get('/get-collections', async (req, res) => {
   const token = await auth.adobe_token(req, res);
   if (token == 'error') return console.error('No api token');
 
-  const collections = (await db.collection('photo_metadata').doc('collections').get()).data();
+  const collFetch = await db.collection('photo_metadata').doc('collections').get();
+  const collections = collFetch.exists ? collFetch.data() : {};
 
   res.json(collections);
   console.log('Successfully fetched collections');
@@ -234,21 +253,34 @@ app.put('/album-click/:id/:collection', async (req, res) => {
       return;
     }
 
-    const albumNumPhotos = Object.values(albums[key].photos).length;
-    console.log(albumNumPhotos);
-
-    const curr = (await db.collection('photo_metadata').doc('collections').get()).data();
+    const currFetch = await db.collection('photo_metadata').doc('collections').get();
+    const curr = currFetch.exists ? currFetch.data() : {};
 
     if (typeof curr === 'object') {
-      const selected = curr[collection]['album'] === key;
+      const currSel = curr[collection]['album'];
+      const selected = currSel === key;
 
-      if (curr[collection].selected || collection === 'homepage') {
-        albums[key].selected += selected ? -1 : 1;
+      if (selected) {
+        albums[key].collection = '';
+      } else {
+        albums[key].collection = collection;
+        if (typeof albums[currSel] === 'object') albums[currSel].collection = '';
       }
-      
-      await db.collection('photo_metadata').doc('albums').update({
+
+      const albumData = {
         [key]: albums[key]
-      });
+      };
+      
+      if (currSel && currSel !== key && typeof albums[currSel] === 'object') {
+        albumData[currSel] = albums[currSel]; 
+        albumData[currSel].collection = '';
+      }
+
+      await db.collection('photo_metadata').doc('albums').set(albumData, { 'merge': true });
+
+      await getAssets(token);
+      const albumNumPhotos = (await fetchRenditions(token, key, '2048')).length;
+      console.log(albumNumPhotos);
 
       await db.collection('photo_metadata').doc('collections').update({
         [collection]: {
@@ -257,10 +289,6 @@ app.put('/album-click/:id/:collection', async (req, res) => {
         }
       });
     }
-
-    const token = await adobeSession.apiToken();
-    await getAssets(token);
-    await fetchRenditions(token, key, '2048');
 
     res.json(albums);
     console.log('Successfully altered albums');
@@ -279,7 +307,8 @@ app.put('/collection-click/:collection', async (req, res) => {
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
-  const collections = (await db.collection(`photo_metadata`).doc('collections').get()).data();
+  const collFetch = await db.collection('photo_metadata').doc('collections').get();
+  const collections = collFetch.exists ? collFetch.data() : {};
   console.log(`Changing collection ${key}`)
 
   if (typeof collections === 'object') {
@@ -339,7 +368,8 @@ app.put('/add-collection/:collection', async (req, res) => {
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
-  const collections = (await db.collection(`photo_metadata`).doc('collections').get()).data();
+  const collFetch = await db.collection('photo_metadata').doc('collections').get();
+  const collections = collFetch.exists ? collFetch.data() : {};
 
   if (typeof collections === 'object') {
     if (key in collections) {
@@ -355,9 +385,9 @@ app.put('/add-collection/:collection', async (req, res) => {
       index: numColl
     }
 
-    await db.collection('photo_metadata').doc('collections').update({
+    await db.collection('photo_metadata').doc('collections').set({
       [key]: collections[key]
-    })
+    }, { merge: true });
     res.json(collections);
   } else {
     console.error('Unexpected error occured when accessing collections metadata');
@@ -374,7 +404,8 @@ app.put('/del-collection/:collection', async (req, res) => {
   if (token == 'error') return console.error('No api token');
 
   const key = req.params.collection;
-  const collections = (await db.collection(`photo_metadata`).doc('collections').get()).data();
+  const collFetch = await db.collection('photo_metadata').doc('collections').get();
+  const collections = collFetch.exists ? collFetch.data() : {};
 
   if (typeof collections === 'object') {
     if (!(key in collections)) {

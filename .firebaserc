@@ -1,6 +1,7 @@
 {
   "projects": {
-    "photo-website-f20b9": "photo-website-f20b9"
+    "photo-website-f20b9": "photo-website-f20b9",
+    "default": "photo-website-f20b9"
   },
   "targets": {
     "photo-website-f20b9": {

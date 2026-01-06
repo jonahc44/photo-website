@@ -70,9 +70,9 @@ const HeaderMenu: React.FC<HeaderProps> = ({handleClick, isHidden}: HeaderProps)
           <path strokeLinecap="round" strokeLinejoin="round" d="M2 22 22 2M2 2l20 20" />
         </svg>
       </button>
-      <Link to='/' className={`hover:text-white hover:cursor-pointer focus:text-white h-min col-start-2 col-2`} tabIndex={isHidden ? 0 : -1} aria-label='Go to home page'>Home</Link>
-      <Link to="/collections" className={`hover:text-white hover:cursor-pointer focus:text-white h-min col-start-2 col-2`} tabIndex={isHidden ? 0 : -1} aria-label='Go to collections page'>Collections</Link>
-      <Link to="/about" className={`hover:text-white hover:cursor-pointer focus:text-white h-min col-start-2 col-2`} tabIndex={isHidden ? 0 : -1} aria-label='Go to about page'>About</Link>
+      <Link to='/' onClick={handleClick} className={`hover:text-white hover:cursor-pointer focus:text-white h-min col-start-2 col-2`} tabIndex={isHidden ? 0 : -1} aria-label='Go to home page'>Home</Link>
+      <Link to="/collections" onClick={handleClick} className={`hover:text-white hover:cursor-pointer focus:text-white h-min col-start-2 col-2`} tabIndex={isHidden ? 0 : -1} aria-label='Go to collections page'>Collections</Link>
+      <Link to="/about" onClick={handleClick} className={`hover:text-white hover:cursor-pointer focus:text-white h-min col-start-2 col-2`} tabIndex={isHidden ? 0 : -1} aria-label='Go to about page'>About</Link>
     </div>
   )
 }
@@ -80,7 +80,7 @@ const HeaderMenu: React.FC<HeaderProps> = ({handleClick, isHidden}: HeaderProps)
 const Header: React.FC<HeaderProps> = ({handleClick, handleScroll, isHidden, isClicked}: HeaderProps) => {
   return (
     <div className={`fixed z-4 flex flex-row justify-between items-center w-screen h-32 bg-onyx text-eggshell transition-transform duration-350 delay-100 ease-in-out motion-reduce:transition-none ${
-      isHidden ? (isClicked ? 'invisible' : '' ) : (isClicked ? 'invisible' : 'translate-y-[-140px]')}`} >
+      isHidden ? (isClicked ? 'invisible' : '' ) : (isClicked ? 'invisible' : '-translate-y-35')}`} >
         <SkipToMain />
         <Link to ='/' className='text-4xl font-semibold z-5 w-fit pl-10 hover:text-white focus:text-white' tabIndex={isHidden ? 0 : -1} aria-label='Go to home page'>Tommy Gillis</Link>
         <OpenMenu handleClick={handleClick} handleScroll={handleScroll} isHidden={isHidden} isClicked={isClicked}/>
@@ -92,7 +92,7 @@ const OpenMenu: React.FC<HeaderProps> = ({handleClick, isHidden, isClicked}: Hea
   return (
     <button onClick={handleClick} className='text-eggshell' tabIndex={isHidden ? 0 : -1} aria-label='Open navigation menu'>
       <svg xmlns="http://www.w3.org/2000/svg" stroke='currentColor' viewBox='0 0 40 26' className={`w-24 h-min text-eggshell z-6 hover:text-white hover:cursor-pointer focus:text-white transition-transform duration-350 delay-100 ease-in-out motion-reduce:transition-none ${
-        isHidden ? (isClicked ? 'invisible' : '' ) : (isClicked ? 'invisible' : 'translate-y-[-140px]')}`}>
+        isHidden ? (isClicked ? 'invisible' : '' ) : (isClicked ? 'invisible' : '-translate-y-35')}`}>
           <path d="M 3 5 A 1.0001 1.0001 0 1 0 3 7 L 21 7 A 1.0001 1.0001 0 1 0 21 5 L 3 5 z M 3 11 A 1.0001 1.0001 
           0 1 0 3 13 L 21 13 A 1.0001 1.0001 0 1 0 21 11 L 3 11 z M 3 17 A 1.0001 1.0001 0 1 0 3 19 L 21 19 A 1.0001 1.0001 0 1 0 21 17 L 3 17 z">
           </path>

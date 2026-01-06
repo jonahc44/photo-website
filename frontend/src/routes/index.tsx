@@ -25,38 +25,40 @@ export const Route = createFileRoute('/')({
   // loader: fetchPhotos
 })
 
-const Photos = () => {
+const IndexMain: React.FC = () => {
   const { status, data: photos = [], error } = useQuery({
     queryKey: ['photos', 'homepage'],
     queryFn: () => fetchPhotos('homepage'),
   });
 
-  if (status === 'pending') {
-    return <div>Loading...</div>
+  const Photos = () => {
+    if (status === 'pending') {
+      return <div>Loading...</div>
+    }
+
+    if (status === 'error') {
+      return <div>Error: {error.message}</div>
+    }
+
+    return (
+      <div className="grid gap-14 justify-items-center h-full w-5/6 auto-rows-min last:pb-20">
+        {photos.sort((a: Photo, b: Photo) => a.index - b.index).map((photo: Photo) => (
+          <a key={photo.index} target="_blank" rel="noopener noreferrer" className="place-self-center">
+            <img src={photo.url} alt={`Image ${photo.index + 1}`} loading='lazy' className="max-h-[90vh]"/>
+          </a>
+        ))}
+      </div>
+    );
   }
 
-  if (status === 'error') {
-    return <div>Error: {error.message}</div>
-  }
+  const text = (status === 'success' && photos.length === 0) 
+    ? 'No Photos Available' 
+    : 'Recent Photos';
 
-  console.log(photos);
-
-  return (
-    <div className="grid gap-14 justify-items-center h-full w-5/6 auto-rows-min last:pb-20">
-      {photos.sort((a: Photo, b: Photo) => a.index - b.index).map((photo: Photo) => (
-        <a key={photo.index} target="_blank" rel="noopener noreferrer" className="place-self-center">
-          <img src={photo.url} alt={`Image ${photo.index + 1}`} loading='lazy' className="max-h-[90vh]"/>
-        </a>
-      ))}
-    </div>
-  );
-}
-
-const IndexMain: React.FC = () => {
   return (
     <div className="grid gap-14 place-items-center h-full max-w-fit auto-rows-min last:pb-20 min-h-screen">
       <h1 className='w-screen text-4xl font-semibold sm:text-5xl text-onyx p-10 pt-45 grid place-content-center'>
-        Recent Photos
+        {text}
       </h1>
       <Photos />
     </div>

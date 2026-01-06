@@ -46,7 +46,10 @@ export const refreshApiToken = async () => {
     if (currTime >= expiryTime) {
         const secrets = JSON.parse(process.env.SECRETS as string);
         const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
-        const authString = Buffer.from(`${secrets.adobe_id}:${secrets.adobe_secret}`).toString('base64');
+
+        const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
+        const clientSecret = process.env.ENV === 'dev' ? secrets.dev_secret : secrets.adobe_secret;
+        const authString = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
         console.log('Fetching new api token...');
         await axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${refreshToken}`, {

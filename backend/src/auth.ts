@@ -5,6 +5,9 @@ import axios from 'axios'
 import crypto from 'crypto'
 import qs from 'querystring'
 import { db } from './server'
+import dotenv from 'dotenv'
+
+dotenv.config();
 
 interface TokenResponse {
   access_token: string,
@@ -58,13 +61,14 @@ export const authenticate = (req: Request, res: Response) => {
     const state = crypto.randomBytes(16).toString('hex');
     req.session.state = state;
 
+    const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
     const params = qs.stringify({
-        client_id: secrets.adobe_id,
-        redirect_uri: process.env.REDIRECT,
+        client_id: clientId,
         response_type: 'code',
         scope: 'lr_partner_apis,offline_access,AdobeID,openid,lr_partner_rendition_apis',
         state: state
     });
+
     req.session.save();
     res.redirect(`${authUrl}${params}`);
 }
@@ -94,13 +98,17 @@ export const callback = async (req: Request, res: Response, auth: auth.Auth) => 
     }
 
     try {
+      const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
+      const clientSecret = process.env.ENV === 'dev' ? secrets.dev_secret : secrets.adobe_secret;
+
       const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
-      const authString = Buffer.from(`${secrets.adobe_id}:${secrets.adobe_secret}`).toString('base64');
+      const authString = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
       const params = qs.stringify({
       code: code as string,
       grant_type: 'authorization_code',
-      client_id: secrets.adobe_id,
-      client_secret: secrets.adobe_secret
+      client_id: clientId,
+      client_secret: clientSecret
       });
       
       const response = await axios.post<TokenResponse>(tokenUrl, params, {
@@ -114,7 +122,7 @@ export const callback = async (req: Request, res: Response, auth: auth.Auth) => 
       const refreshToken = response.data.refresh_token;
       const expiryTime = response.data.expires_in;
       
-      const userUrl = `https://ims-na1.adobelogin.com/ims/userinfo/v2?client_id=${secrets.adobe_id}`;
+      const userUrl = `https://ims-na1.adobelogin.com/ims/userinfo/v2?client_id=${clientId}`;
       const userInfo = await axios.get<UserResponse>(userUrl, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -143,7 +151,9 @@ export const callback = async (req: Request, res: Response, auth: auth.Auth) => 
 
         console.log(`Successfully minted Firebase custom token for Adobe user`);
         await adobeSession.createSession(accessToken, refreshToken, expiryTime);
-        res.redirect(`https://photo-admin-3b694.firebaseapp.com/?token=${firebaseCustomToken}`);
+
+        const redirect = process.env.ENV === 'dev' ? `https://localhost:4000/?token=${firebaseCustomToken}` : `https://photo-admin-3b694.firebaseapp.com/?token=${firebaseCustomToken}`;
+        res.redirect(redirect);
         // res.header({ firebaseCustomToken });
       } catch (error: any) {
         console.error('Error minting Firebase custom token:', error.message);
