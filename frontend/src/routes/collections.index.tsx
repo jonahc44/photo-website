@@ -104,11 +104,13 @@ const AllCollections = () => {
           onClick={() => console.log(`Clicked on ${coll.name}`)}
           className='m-5 p-2 text-3xl border-4 border-onyx text-center font-bold text-onyx hover:text-gray-600 hover:border-gray-600 focus:text-gray-600 focus:border-gray-600'
         >
-          <img
-            src={coll.thumbnailUrl}
-            alt={`Thumbnail for collection ${coll.name}`}
-            className='p-1 pb-3'
-          />
+          {coll.thumbnailUrl && (
+            <img
+              src={coll.thumbnailUrl}
+              alt={`Thumbnail for collection ${coll.name}`}
+              className='p-1 pb-3'
+            />
+          )}
           {coll.name}
         </Link>
       ))}
