@@ -46,6 +46,14 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
     
     let albums = (await db.collection('photo_metadata').doc('albums').get()).data();
     let allData: any[] = [];
+
+    const getHeaders = (clientId: string) => ({
+        'Authorization': `Bearer ${token}`,
+        'X-API-Key': clientId,
+        'Accept': 'image/jpeg',
+        'Cache-Control': 'max-age=1800000'
+    });
+    
     for (const albumKey in albums) {
         const album = albums[albumKey] as Album;
         if (album.collection !== '' && albumKey === currAlbum) {
@@ -69,56 +77,79 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
 
                     if (!exists) {
                         const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
-                        const response = await axios.get(`${baseUrl}${href}/renditions/${type}`, {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'X-API-Key': clientId,
-                                'Accept': 'image/jpeg',
-                                'Cache-Control': 'max-age=1800000'
-                            },
-                            responseType: 'arraybuffer'
-                        });
-
-                        const binaryData = await response.data as ArrayBuffer;
+                        let binaryData: ArrayBuffer | null = null;
+                        
                         try {
-                            await new Promise<void>((res, rej) => {
-                                const writeStream = file.createWriteStream({
-                                    metadata: {
-                                        contentType: 'image/jpeg'
-                                    },
-                                    resumable: false
-                                });
-
-                                writeStream.on('error', (err) => {
-                                    console.error('Error when uploading photo:', err);
-                                    rej(err);
-                                });
-
-                                writeStream.on('finish', async () => {
-                                    try {
-                                        const [url] = await file.getSignedUrl({
-                                            action: 'read',
-                                            expires: '03-09-2400'
-                                        });
-
-                                        if (typeof albums === 'object') {
-                                            if (type === 'thumbnail2x') {
-                                                albums[albumKey].photos[key].thumbnail = url;
-                                            } else {
-                                                albums[albumKey].photos[key].url = url;
-                                            }
-                                        }
-                                        res();
-                                    } catch (err) {
-                                        console.error('Could not get signed url:', err);
-                                        rej(err);
-                                    }
-                                });
-
-                                writeStream.end(binaryData);
+                            const response = await axios.get(`${baseUrl}${href}/renditions/${type}`, {
+                                headers: getHeaders(clientId),
+                                responseType: 'arraybuffer'
                             });
-                        } catch (err) {
-                            console.error('Error uploading images: ', err);
+                            binaryData = response.data as ArrayBuffer;
+                        } catch (err: any) {
+                            if (type === '2048' && err.response && err.response.status === 404) {
+                                console.warn(`Rendition 2048 not found for ${key}. Falling back to 1280.`);
+                                
+                                try {
+                                    const fallbackType = '1280'; 
+                                    const response = await axios.get(`${baseUrl}${href}/renditions/${fallbackType}`, {
+                                        headers: getHeaders(clientId),
+                                        responseType: 'arraybuffer'
+                                    });
+                                    binaryData = response.data as ArrayBuffer;
+                                } catch (fallbackErr: any) {
+                                    if (fallbackErr.response?.data) {
+                                        const errStr = fallbackErr.response.data.toString('utf8');
+                                        console.error(`Fallback failed for ${key}. Adobe Error:`, errStr.replace(/^while\s*\(\d+\)\s*\{\}\s*/, ''));
+                                    }
+                                    throw fallbackErr;
+                                }
+                            } else {
+                                
+                                throw err;
+                            }
+                        }
+
+                        if (binaryData) {
+                            try {
+                                await new Promise<void>((res, rej) => {
+                                    const writeStream = file.createWriteStream({
+                                        metadata: {
+                                            contentType: 'image/jpeg'
+                                        },
+                                        resumable: false
+                                    });
+
+                                    writeStream.on('error', (err) => {
+                                        console.error('Error when uploading photo:', err);
+                                        rej(err);
+                                    });
+
+                                    writeStream.on('finish', async () => {
+                                        try {
+                                            const [url] = await file.getSignedUrl({
+                                                action: 'read',
+                                                expires: '03-09-2400'
+                                            });
+
+                                            if (typeof albums === 'object') {
+                                                if (type === 'thumbnail2x') {
+                                                    albums[albumKey].photos[key].thumbnail = url;
+                                                } else {
+                                                    albums[albumKey].photos[key].url = url;
+                                                }
+                                            }
+                                            res();
+                                        } catch (err) {
+                                            console.error('Could not get signed url:', err);
+                                            rej(err);
+                                        }
+                                    });
+
+                                    writeStream.end(Buffer.from(binaryData));
+                                });
+                            } catch (err) {
+                                console.error('Error uploading images: ', err);
+                            }
                         }
                     } else {
                         const [url] = await file.getSignedUrl({
@@ -132,7 +163,7 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
                         }
                     }
                 } catch (err) {
-                    console.error('Error fetching image:', err);
+                    console.error(`Final error processing ${key}:`, err);
                 }
             }
 
