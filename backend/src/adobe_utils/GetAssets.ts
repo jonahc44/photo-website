@@ -2,6 +2,7 @@ import axios from 'axios'
 import dotenv from 'dotenv'
 import { db } from '../server'
 import { getCatalog } from './GetCatalog'
+import { admin } from '../server';
 dotenv.config();
 
 interface Asset {
@@ -30,7 +31,15 @@ interface Album {
 }
 
 interface AssetRes {
-    resources: [Asset]
+    resources: [Asset],
+    links: {
+        prev: {
+            href: string
+        },
+        next: {
+            href: string
+        }
+    }
 };
 
 export const getAssets = async (token: string) => {
@@ -38,56 +47,99 @@ export const getAssets = async (token: string) => {
     const catHref = await getCatalog(token);
     const baseUrl = `https://lr.adobe.io/v2/${catHref}/`;
     const albums = (await db.collection('photo_metadata').doc('albums').get()).data();
+    const updates: { [key: string]: any } = {};
+    const storageDeletionTasks: Promise<any>[] = [];
 
-    if (typeof albums === 'object') {
+    if (typeof albums === 'object' && albums !== null) {
         
-        for (const albumData of Object.values(albums)) {
-            let numPhotos = 0;
+        for (const [albumKey, albumData] of Object.entries(albums)) {
             const album = albumData as Album;
 
             if (album.collection !== '') {
-                const url = `${baseUrl}${album.href}/assets`;
+                const currentPhotos = album.photos || {};
+                let runningIndex = Object.keys(currentPhotos).length;
+                let adobeAssetsMap = new Set<string>();
+                let nextHref = `${album.href}/assets`; 
 
-                const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
-                const response = await axios.get<string>(url, {
-                    headers: {
-                        'X-API-Key': clientId,
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                try {
+                    while (nextHref) {
+                        const url = nextHref.startsWith('http') 
+                            ? nextHref 
+                            : `${baseUrl}${nextHref.startsWith('/') ? '' : '/'}${nextHref}`;
 
-                const stringData = response.data.replace('while (1) {}\n', '');
-                const data = JSON.parse(stringData) as AssetRes;
+                        const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
+                        const response = await axios.get<string>(url, {
+                            headers: {
+                                'X-API-Key': clientId,
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        const stringData = response.data.replace('while (1) {}\n', '');
+                        const data = JSON.parse(stringData) as AssetRes;
 
-                for (var i = 0; i < data.resources.length; i++) {
-                    const asset = data.resources[i].asset;
-                    const key = `asset_${asset.id}`;
+                        for (const resource of data.resources) {
+                            if (!resource?.asset?.links?.self?.href) {
+                                continue;
+                            }
 
-                    if (!(key in album.photos)) {
-                        album.photos[key] = {
-                            href: asset.links.self.href,
-                            url: '',
-                            thumbnail: '',
-                            index: numPhotos
+                            const asset = resource.asset;
+                            const href = asset.links.self.href;
+
+                            if (!href.startsWith('assets') && !href.startsWith('/assets')) {
+                                continue;
+                            }
+                            const assetKey = `asset_${asset.id}`;
+                            adobeAssetsMap.add(assetKey);
+
+                            if (!(assetKey in currentPhotos)) {
+                                updates[`${albumKey}.photos.${assetKey}`] = {
+                                    href: asset.links.self.href,
+                                    url: '',
+                                    thumbnail: '',
+                                    index: runningIndex
+                                };
+                                runningIndex++;
+                            }
                         }
-                        numPhotos++;
+
+                        if (data.links && data.links.next) {
+                            nextHref = data.links.next.href;
+                        } else {
+                            nextHref = '';
+                        }
                     }
+
+                    for (const existingKey of Object.keys(currentPhotos)) {
+                        if (!adobeAssetsMap.has(existingKey)) {
+                            const bucket = admin.storage().bucket();
+                            const photoFile = bucket.file(`photos/${existingKey}.jpg`);
+                            const thumbFile = bucket.file(`thumbnails/${existingKey}.jpg`);
+                            
+                            storageDeletionTasks.push(photoFile.delete().catch(() => {}));
+                            storageDeletionTasks.push(thumbFile.delete().catch(() => {}));
+
+                            updates[`${albumKey}.photos.${existingKey}`] = admin.firestore.FieldValue.delete();
+                        }
+                    }
+
+                } catch (e) {
+                    console.error(`Failed to sync assets for ${albumKey}`, e);
                 }
             }
         }
-    } else {
-        console.error('Unexpected error occurred while accessing albums metadata');
-        return;
     }
 
-    // await db.collection('photo_metadata').doc('catalog').update({
-    //     ['sel_photos']: numPhotos
-    // });
+    if (storageDeletionTasks.length > 0) {
+        await Promise.all(storageDeletionTasks);
+        console.log(`Cleaned up ${storageDeletionTasks.length / 2} photos from Storage.`);
+    }
 
-    try {
-        if (typeof albums === 'object') await db.collection('photo_metadata').doc('albums').set(albums);
-        else throw new Error;
-    } catch (err) {
-        console.error(err);
+    if (Object.keys(updates).length > 0) {
+        try {
+            await db.collection('photo_metadata').doc('albums').update(updates);
+        } catch (err) {
+            console.error(err);
+        }
     }
 }
