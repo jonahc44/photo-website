@@ -127,7 +127,11 @@ export const getAlbums = async (token: string) => {
         }
 
         if (Object.keys(updates).length > 0) {
-            await albumsDocRef.set(updates, { merge: true });
+            if (albumsFetch.exists) {
+                await albumsDocRef.update(updates);
+            } else {
+                await albumsDocRef.set(updates, { merge: true });
+            }
         }
 
     } catch (err) {
