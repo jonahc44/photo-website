@@ -146,7 +146,7 @@ const BioManager = () => {
           disabled={isFetching}
           rows={6}
           className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400 text-gray-800"
-          placeholder={isFetching ? "Loading bio..." : "Tell your story here..."}
+          placeholder={isFetching ? "Loading bio..." : "Tommy is a photographer based out of Chicago, IL."}
         />
         
         {isFetching && (
