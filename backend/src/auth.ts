@@ -1,10 +1,10 @@
 import * as adobeSession from './adobe_utils/SessionManager'
 import { Request, Response } from 'express'
-import { auth, firestore } from 'firebase-admin'
+import { auth } from 'firebase-admin'
 import axios from 'axios'
 import crypto from 'crypto'
 import qs from 'querystring'
-import { db } from './server'
+import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 
 dotenv.config();
@@ -51,7 +51,6 @@ export async function decodeToken(req: Request, res: Response, auth: auth.Auth) 
 }
 
 export const adobe_token = async (req: Request, res: Response) => {
-    if (req.session.auth == 0) return 'error';
     const token = await adobeSession.apiToken();
     return token;
 }
@@ -59,7 +58,13 @@ export const adobe_token = async (req: Request, res: Response) => {
 export const authenticate = (req: Request, res: Response) => {
     const authUrl = 'https://ims-na1.adobelogin.com/ims/authorize/v2?';
     const state = crypto.randomBytes(16).toString('hex');
-    req.session.state = state;
+
+    res.cookie('adobe_auth_state', state, {
+        httpOnly: true,
+        secure: true,
+        signed: true,
+        maxAge: 600000
+    });
 
     const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
     const params = qs.stringify({
@@ -69,7 +74,6 @@ export const authenticate = (req: Request, res: Response) => {
         state: state
     });
 
-    req.session.save();
     res.redirect(`${authUrl}${params}`);
 }
 
@@ -86,14 +90,16 @@ export const get_auth = async (req: Request, res: Response, auth: auth.Auth) => 
 
 export const callback = async (req: Request, res: Response, auth: auth.Auth) => {
     const { code, state, error } = req.query;
+    const savedState = req.signedCookies['adobe_auth_state'];
 
     if (error) {
         res.send(`Adobe Sign-In Error: ${error}`);
         return;
     }
 
-    if (!code) {
-        res.send('Authorization code not found.');
+    if (!state || state !== savedState) {
+        console.error(`State mismatch. Received: ${state}, Expected: ${savedState}`);
+        res.status(403).send('Invalid state parameter. Possible CSRF attack or session timeout.');
         return;
     }
 

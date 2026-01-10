@@ -6,7 +6,7 @@ import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
 import cors from 'cors'
-import session from 'express-session'
+import cookieParser from 'cookie-parser'
 import * as admin from 'firebase-admin'
 import * as auth from './auth'
 import { fetchRenditions } from './adobe_utils/GetRenditions'
@@ -17,13 +17,6 @@ import { AddressInfo } from 'net';
 import { FieldValue } from 'firebase-admin/firestore';
 
 dotenv.config();
-
-declare module 'express-session' {
-  interface SessionData {
-    auth?: number,
-    state?: string
-  }
-}
 
 interface TokenResponse {
   access_token: string,
@@ -109,17 +102,7 @@ app.use(cors({
   origin: allowedOrigins
 }));
 
-app.use(session({
-  secret: secrets.session_secret,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true, 
-    secure: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: 'none'
-  },
-}))
+app.use(cookieParser(secrets.session_secret));
 
 app.use(express.json({ limit: '50mb' }));
 

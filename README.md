@@ -1,0 +1,1 @@
+Link (temporary) to public website: https://photo-website-f20b9.firebaseapp.com/
