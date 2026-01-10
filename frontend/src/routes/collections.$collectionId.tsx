@@ -48,14 +48,26 @@ const Photos = () => {
   console.log(photos);
 
   return (
-    <div className="grid gap-14 justify-items-center h-full w-5/6 auto-rows-min last:pb-20">
-      {photos.sort((a: Photo, b: Photo) => a.index - b.index).map((photo: Photo) => (
-        <a key={photo.index} target="_blank" rel="noopener noreferrer" className="place-self-center">
-          <img src={photo.url} alt={`Image ${photo.index + 1}`} loading='lazy' className="max-h-[90vh]"/>
-        </a>
-      ))}
-    </div>
-  );
+      <div className="w-11/12 mx-auto columns-sm gap-6 space-y-6 pb-20">
+        {photos
+          .sort((a: Photo, b: Photo) => a.index - b.index)
+          .map((photo: Photo) => (
+            <a 
+              key={photo.index} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="block break-inside-avoid shadow-2xl relative"
+            >
+              <img 
+                src={photo.url} 
+                alt={`Image ${photo.index + 1}`} 
+                loading='lazy' 
+                className="w-full min-h-70 max-h-[70vh] h-auto object-cover shadow-xl" 
+              />
+            </a>
+          ))}
+      </div>
+    );
 }
 
 const CollectionMain: React.FC = () => {
