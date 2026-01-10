@@ -87,22 +87,35 @@ export const Albums: React.FC<AlbumsProps> = ({ activeColl }) => {
         <p className='p-1 mb-3 h-min text-2xl'>
           Currently Selected: <span className="font-bold">{currentAlbum ? currentAlbum.name : 'None'}</span>
         </p>
-        {albums.map((album: Album) => (
-          <div key={album.id}>
-            <label className={`flex items-center space-x-2 ${mutation.isPending ? 'opacity-50' : ''}`}>
-              <input
-                className='mx-2 cursor-pointer disabled:cursor-not-allowed'
-                type='checkbox'
-                disabled={mutation.isPending}
-                checked={album === currentAlbum}
-                onChange={() => {
-                   mutation.mutate(album.id);
-                }}
-              />
-              {album.name}
-            </label>
-          </div>
-        ))}
+        {albums.map((album: Album) => {
+          const isAssignedToOther = !!album.collection && album.collection !== activeColl;
+
+          return (
+            <div key={album.id}>
+              <label className={`flex items-center space-x-2 ${mutation.isPending ? 'opacity-50' : ''} ${isAssignedToOther ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
+                <input
+                  className='mx-2 cursor-pointer disabled:cursor-not-allowed'
+                  type='checkbox'
+                  disabled={mutation.isPending || isAssignedToOther}
+                  checked={album === currentAlbum}
+                  onChange={() => {
+                    if (!isAssignedToOther) {
+                        mutation.mutate(album.id);
+                     }
+                  }}
+                />
+                <span>
+                  {album.name}
+                  {isAssignedToOther && (
+                    <span className="text-sm text-red-500 italic ml-2">
+                      (Used in {album.collection})
+                    </span>
+                  )}
+                </span>
+              </label>
+            </div>
+          )
+        })}
       </div>
     )
 }
