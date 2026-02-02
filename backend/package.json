@@ -54,6 +54,8 @@
     "ts-node": "^10.9.2"
   },
   "overrides": {
-    "protobufjs": "^7.2.5"
+    "protobufjs": "^7.2.5",
+    "fast-xml-parser": "5.3.4",
+    "tar": "^6.2.1"
   }
 }
