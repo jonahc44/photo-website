@@ -125,24 +125,16 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
                                     });
 
                                     writeStream.on('finish', async () => {
-                                        try {
-                                            const [url] = await file.getSignedUrl({
-                                                action: 'read',
-                                                expires: '03-09-2400'
-                                            });
-
-                                            if (typeof albums === 'object') {
-                                                if (type === 'thumbnail2x') {
-                                                    albums[albumKey].photos[key].thumbnail = url;
-                                                } else {
-                                                    albums[albumKey].photos[key].url = url;
-                                                }
+                                        if (typeof albums === 'object') {
+                                            const storagePath = file.name; 
+                                            
+                                            if (type === 'thumbnail2x') {
+                                                albums[albumKey].photos[key].thumbnail = storagePath;
+                                            } else {
+                                                albums[albumKey].photos[key].url = storagePath;
                                             }
-                                            res();
-                                        } catch (err) {
-                                            console.error('Could not get signed url:', err);
-                                            rej(err);
                                         }
+                                        res();
                                     });
 
                                     writeStream.end(Buffer.from(binaryData));
@@ -152,14 +144,12 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
                             }
                         }
                     } else {
-                        const [url] = await file.getSignedUrl({
-                            action: 'read',
-                            expires: '03-09-2400'
-                        });
+                        const storagePath = file.name;
+                        
                         if (type === 'thumbnail2x') {
-                            albums[albumKey].photos[key].thumbnail = url;
+                            albums[albumKey].photos[key].thumbnail = storagePath;
                         } else {
-                            albums[albumKey].photos[key].url = url;
+                            albums[albumKey].photos[key].url = storagePath;
                         }
                     }
                 } catch (err) {

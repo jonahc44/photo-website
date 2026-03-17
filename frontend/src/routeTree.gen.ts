@@ -39,7 +39,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
-  '/collections': typeof CollectionsIndexRoute
+  '/collections/': typeof CollectionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -56,7 +56,7 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/collections/$collectionId' | '/collections'
+  fullPaths: '/' | '/about' | '/collections/$collectionId' | '/collections/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/about' | '/collections/$collectionId' | '/collections'
   id:
@@ -93,7 +93,7 @@ declare module '@tanstack/react-router' {
     '/collections/': {
       id: '/collections/'
       path: '/collections'
-      fullPath: '/collections'
+      fullPath: '/collections/'
       preLoaderRoute: typeof CollectionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { getStorage, connectStorageEmulator, ref, getDownloadURL } from 'firebase/storage';
 import { getFirestore, getDoc, doc, connectFirestoreEmulator } from 'firebase/firestore';
 
 type Photo = {
@@ -52,8 +52,34 @@ export const fetchPhotos = async (coll: string): Promise<Photo[]> => {
       if (snapshot.exists()) {
         const photos = snapshot.data()[albumKey]?.photos || [];
         const photosArray = Object.values(photos) as Photo[];
-        console.log(photosArray);
-        return photosArray;
+
+        const photosWithValidUrls = await Promise.all(
+          photosArray.map(async (photo) => {
+            try {
+              const imageRef = ref(storage, photo.url);
+              const actualImageUrl = await getDownloadURL(imageRef);
+
+              let actualThumbnailUrl = photo.thumbnail;
+              if (photo.thumbnail && !photo.thumbnail.startsWith('http')) {
+                const thumbRef = ref(storage, photo.thumbnail);
+                actualThumbnailUrl = await getDownloadURL(thumbRef);
+              }
+
+              return {
+                ...photo,
+                url: actualImageUrl,
+                thumbnail: actualThumbnailUrl
+              };
+              
+            } catch (err) {
+              console.error(`Failed to generate URL for path: ${photo.url}`, err);
+              return photo; 
+            }
+          })
+        );
+
+        console.log("Photos with valid URLs:", photosWithValidUrls);
+        return photosWithValidUrls;
       }
     }
     return [];
