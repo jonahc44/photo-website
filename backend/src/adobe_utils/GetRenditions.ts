@@ -2,8 +2,9 @@ import axios from 'axios'
 import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
+import sizeOf from 'image-size'
 import * as admin from 'firebase-admin'
-import { File } from '@google-cloud/storage';
+import { File } from '@google-cloud/storage'
 import { db } from '../server'
 import { getCatalog } from './GetCatalog'
 // import serviceAccount from '../serviceAccountKey.json'
@@ -18,7 +19,9 @@ interface Album {
             href: string,
             url: string,
             thumbnail: string,
-            index: number
+            index: number,
+            width?: number,
+            height?: number
         }
     }
 }
@@ -110,6 +113,18 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
                         }
 
                         if (binaryData) {
+                            const buffer = Buffer.from(binaryData);
+                            
+                            try {
+                                const dimensions = sizeOf(buffer);
+                                if (dimensions.width && dimensions.height) {
+                                    albums[albumKey].photos[key].width = dimensions.width;
+                                    albums[albumKey].photos[key].height = dimensions.height;
+                                }
+                            } catch (dimErr) {
+                                console.error(`Could not get dimensions for ${key}:`, dimErr);
+                            }
+
                             try {
                                 await new Promise<void>((res, rej) => {
                                     const writeStream = file.createWriteStream({
@@ -137,13 +152,21 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
                                         res();
                                     });
 
-                                    writeStream.end(Buffer.from(binaryData));
+                                    writeStream.end(buffer);
                                 });
                             } catch (err) {
                                 console.error('Error uploading images: ', err);
                             }
                         }
                     } else {
+                        if (!albums[albumKey].photos[key].width) {
+                            console.log('Adding photo dimensions...');
+                            const [buffer] = await file.download();
+                            const dimensions = sizeOf(buffer);
+                            albums[albumKey].photos[key].width = dimensions.width;
+                            albums[albumKey].photos[key].height = dimensions.height;
+                        }
+
                         const storagePath = file.name;
                         
                         if (type === 'thumbnail2x') {

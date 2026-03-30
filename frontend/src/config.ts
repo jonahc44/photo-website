@@ -6,7 +6,9 @@ import { getFirestore, getDoc, doc, connectFirestoreEmulator } from 'firebase/fi
 type Photo = {
   url: string,
   thumbnail: string,
-  index: number
+  index: number,
+  width: number,
+  height: number
 }
 
 export const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:5000";

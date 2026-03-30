@@ -4,12 +4,15 @@ import React from 'react'
 import { Footer } from '@/Footer';
 import { HeaderController } from '@/Header';
 import { fetchPhotos } from '@/config';
+import { IndividualPhoto } from '@/PhotoUtils';
 import '../global.css'
 
 type Photo = {
   url: string,
   thumbnail: string,
-  index: number
+  index: number,
+  width: number,
+  height: number
 }
 
 // const fetchPhotos = async (collectionId: string) => {
@@ -52,19 +55,7 @@ const Photos = () => {
         {photos
           .sort((a: Photo, b: Photo) => a.index - b.index)
           .map((photo: Photo) => (
-            <a 
-              key={photo.index} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="block break-inside-avoid shadow-2xl relative"
-            >
-              <img 
-                src={photo.url} 
-                alt={`Image ${photo.index + 1}`} 
-                loading='lazy' 
-                className="w-full min-h-70 max-h-[70vh] h-auto object-cover shadow-xl" 
-              />
-            </a>
+            <IndividualPhoto key={photo.index} photo={photo} />
           ))}
       </div>
     );
