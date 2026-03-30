@@ -78,7 +78,7 @@ export const fetchPhotos = async (coll: string): Promise<Photo[]> => {
           })
         );
 
-        console.log("Photos with valid URLs:", photosWithValidUrls);
+        if (window.location.hostname === "localhost") console.log("Photos with valid URLs:", photosWithValidUrls);
         return photosWithValidUrls;
       }
     }

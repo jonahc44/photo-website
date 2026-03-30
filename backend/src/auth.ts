@@ -4,7 +4,6 @@ import { auth } from 'firebase-admin'
 import axios from 'axios'
 import crypto from 'crypto'
 import qs from 'querystring'
-import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 
 dotenv.config();
@@ -84,7 +83,7 @@ export const get_auth = async (req: Request, res: Response, auth: auth.Auth) => 
         res.status(200).json({
         isAuthenticated: true,
         message: 'User is authenticated.'
-        });
+      });
     }
 }
 

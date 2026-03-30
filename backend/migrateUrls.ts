@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // 1. Initialize Firebase Admin
-const serviceAccountPath = path.join(__dirname, '../serviceAccountKey.json');
+const serviceAccountPath = path.join(__dirname, 'src/serviceAccountKey.json');
 const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 
 admin.initializeApp({
