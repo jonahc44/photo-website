@@ -16,7 +16,7 @@
     "@google-cloud/datastore": "^10.0.1",
     "@google-cloud/firestore": "^8.3.0",
     "@google-cloud/storage": "^7.16.0",
-    "@types/axios": "^0.9.36",
+    "@types/axios": "^0.14.4",
     "@types/connect-sqlite3": "^0.9.5",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
