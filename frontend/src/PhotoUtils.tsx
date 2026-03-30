@@ -7,8 +7,15 @@ type Photo = {
   height: number
 }
 
+const globalLoadedImages = new Set<string>();
+
 export const IndividualPhoto = ({ photo }: { photo: Photo }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(() => globalLoadedImages.has(photo.url));
+
+  const handleImageLoad = () => {
+    globalLoadedImages.add(photo.url);
+    setIsLoaded(true);
+  };
 
   return (
     <a
@@ -31,7 +38,7 @@ export const IndividualPhoto = ({ photo }: { photo: Photo }) => {
         className={`absolute inset-0 w-full h-auto object-cover shadow-xl transition-opacity duration-500 ${
           isLoaded ? 'opacity-100' : 'opacity-0 absolute top-0'
         }`}
-        onLoad={() => setIsLoaded(true)}
+        onLoad={handleImageLoad}
       />
     </a>
   );
