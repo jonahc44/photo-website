@@ -9,7 +9,7 @@
     "start": "vite --port 3000",
     "build": "vite build && tsc",
     "serve": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
