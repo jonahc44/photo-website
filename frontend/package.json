@@ -18,9 +18,9 @@
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@tailwindcss/postcss": "^4.2.2",
     "@tailwindcss/vite": "^4.2.2",
-    "@tanstack/react-query": "^5.99.0",
-    "@tanstack/react-query-devtools": "^5.99.0",
-    "@tanstack/react-router": "^1.168.22",
+    "@tanstack/react-query": "^5.99.2",
+    "@tanstack/react-query-devtools": "^5.99.2",
+    "@tanstack/react-router": "^1.168.23",
     "@tanstack/react-router-devtools": "^1.166.13",
     "@tanstack/router-plugin": "^1.167.22",
     "@types/filesystem": "^0.0.36",
@@ -34,7 +34,7 @@
     "react-native-fs": "^2.20.0"
   },
   "devDependencies": {
-    "@tanstack/eslint-plugin-query": "^5.99.0",
+    "@tanstack/eslint-plugin-query": "^5.99.2",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@types/node": "^22.19.17",
