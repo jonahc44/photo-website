@@ -22,15 +22,15 @@
     "@tanstack/react-query-devtools": "^5.100.9",
     "@tanstack/react-router": "^1.169.2",
     "@tanstack/react-router-devtools": "^1.166.13",
-    "@tanstack/router-plugin": "^1.167.34",
+    "@tanstack/router-plugin": "^1.167.35",
     "@types/filesystem": "^0.0.36",
     "@types/tailwindcss": "^3.1.0",
     "dotenv": "^16.5.0",
     "firebase": "^12.12.1",
     "fs": "^0.0.1-security",
     "pragmatic-drag-and-drop": "^0.0.1-security",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "react-native-fs": "^2.20.0"
   },
   "devDependencies": {
