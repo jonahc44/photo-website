@@ -28,7 +28,7 @@ export interface Collection {
 export const fetchCollections = async (home = false) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/get-collections`, {
+    const response = await fetch(`${apiUrl}/api/collections`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -55,8 +55,8 @@ export const fetchCollections = async (home = false) => {
 const reorderCollections = async (colls: Collection[]) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/reorder-collections`, {
-      method: 'PUT',
+    const response = await fetch(`${apiUrl}/api/collections/reorder`, {
+      method: 'PATCH',
       credentials: 'include',
       headers: {
         'Authorization': `Bearer ${idToken}`,
@@ -72,8 +72,8 @@ const reorderCollections = async (colls: Collection[]) => {
   const delCollection = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/del-collection/${href}`, {
-      method: 'PUT',
+    const response = await fetch(`${apiUrl}/api/collections/${href}`, {
+      method: 'DELETE',
       credentials: 'include',
       headers: {
         'Authorization': `Bearer ${idToken}`,
@@ -88,8 +88,8 @@ const reorderCollections = async (colls: Collection[]) => {
 const addCollection = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/add-collection/${href}`, {
-      method: 'PUT',
+    const response = await fetch(`${apiUrl}/api/collections/${href}`, {
+      method: 'POST',
       credentials: 'include',
       headers: {
         'Authorization': `Bearer ${idToken}`,
@@ -104,8 +104,8 @@ const addCollection = async (href: string) => {
 const updateCollections = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/collection-click/${href}`, {
-      method: 'PUT',
+    const response = await fetch(`${apiUrl}/api/collections/${href}`, {
+      method: 'PATCH',
       credentials: 'include',
       headers: {
         'Authorization': `Bearer ${idToken}`,

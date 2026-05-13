@@ -10,7 +10,7 @@
       "forceConsistentCasingInFileNames": true,
       "resolveJsonModule": true
     },
-    "include": ["src/*"],
+    "include": ["src/*", "src/controllers/auth.contoller.ts"],
     "exclude": ["node_modules"]
   }
   

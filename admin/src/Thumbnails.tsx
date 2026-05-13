@@ -22,7 +22,12 @@ export type Photo = {
 }
 
 export const fetchThumbnails = async (album: string) => {
-    const response = await fetch(`${apiUrl}/thumbnails/${album}`);
+    const idToken = await auth.currentUser?.getIdToken(true);
+    const response = await fetch(`${apiUrl}/api/albums/${album}/thumbnails`, {
+       headers: {
+        'Authorization': `Bearer ${idToken}`
+      }
+    });
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
@@ -33,8 +38,8 @@ export const fetchThumbnails = async (album: string) => {
 export const updateThumbnails = async (href: string) => {
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/thumbnail-click/${href}`, {
-      method: 'PUT',
+    const response = await fetch(`${apiUrl}/api/collections/${href}`, {
+      method: 'PATCH',
       credentials: 'include',
       headers: {
         'Authorization': `Bearer ${idToken}`,
@@ -50,8 +55,8 @@ export const reorderThumbnails = async (photos: Photo[], album: string) => {
     console.log('Reordering photos');
     const currentUser = auth.currentUser;
     const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/reorder-photos/${album}`, {
-      method: 'PUT',
+    const response = await fetch(`${apiUrl}/api/albums/${album}/reorder`, {
+      method: 'PATCH',
       credentials: 'include',
       headers: {
         'Authorization': `Bearer ${idToken}`,

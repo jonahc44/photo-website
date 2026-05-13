@@ -29,7 +29,7 @@ interface Album {
 export const fetchRenditions = async (token: string, currAlbum: string, type: string) => {
     const secrets = JSON.parse(process.env.SECRETS as string);
     
-    if (!admin.apps.length){
+    if (!admin.apps.length) {
         if (process.env.ENV == 'dev') {
             const serviceAccount = JSON.parse(fs.readFileSync(path.join(__dirname, '../serviceAccountKey.json'), 'utf8'));
             admin.initializeApp({
@@ -56,6 +56,17 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
         'Accept': 'image/jpeg',
         'Cache-Control': 'max-age=1800000'
     });
+
+    const getPublicUrl = (bucketName: string, fileName: string) => {
+        const encodedPath = encodeURIComponent(fileName);
+
+        if (process.env.ENV === 'dev') {
+            const emulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST || 'localhost:9199';
+            return `http://${emulatorHost}/v0/b/${bucketName}/o/${encodedPath}?alt=media`;
+        }
+
+        return `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedPath}?alt=media`;
+    };
     
     for (const albumKey in albums) {
         const album = albums[albumKey] as Album;
@@ -141,12 +152,12 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
 
                                     writeStream.on('finish', async () => {
                                         if (typeof albums === 'object') {
-                                            const storagePath = file.name; 
-                                            
+                                            const downloadUrl = getPublicUrl(bucket.name, file.name); 
+        
                                             if (type === 'thumbnail2x') {
-                                                albums[albumKey].photos[key].thumbnail = storagePath;
+                                                albums[albumKey].photos[key].thumbnail = downloadUrl;
                                             } else {
-                                                albums[albumKey].photos[key].url = storagePath;
+                                                albums[albumKey].photos[key].url = downloadUrl;
                                             }
                                         }
                                         res();
@@ -167,12 +178,12 @@ export const fetchRenditions = async (token: string, currAlbum: string, type: st
                             albums[albumKey].photos[key].height = dimensions.height;
                         }
 
-                        const storagePath = file.name;
-                        
+                        const downloadUrl = getPublicUrl(bucket.name, file.name);
+    
                         if (type === 'thumbnail2x') {
-                            albums[albumKey].photos[key].thumbnail = storagePath;
+                            albums[albumKey].photos[key].thumbnail = downloadUrl;
                         } else {
-                            albums[albumKey].photos[key].url = storagePath;
+                            albums[albumKey].photos[key].url = downloadUrl;
                         }
                     }
                 } catch (err) {

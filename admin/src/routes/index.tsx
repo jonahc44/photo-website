@@ -46,7 +46,7 @@ export const Route = createFileRoute('/')({
     const idToken = await currentUser?.getIdToken(true);
     console.log('Fetching auth status...');
 
-    const status = await fetch(`${apiUrl}/auth-status`, {
+    const status = await fetch(`${apiUrl}/auth/status`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -102,7 +102,7 @@ function Index() {
     const refreshMutation = useMutation({
       mutationFn: async () => {
         const token = await auth.currentUser?.getIdToken();
-        const response = await fetch(`${apiUrl}/refresh-photos`, {
+        const response = await fetch(`${apiUrl}/api/refresh`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

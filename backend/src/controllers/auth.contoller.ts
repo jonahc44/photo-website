@@ -1,4 +1,4 @@
-import * as adobeSession from './adobe_utils/SessionManager'
+import * as adobeSession from '../adobe_utils/SessionManager'
 import { Request, Response } from 'express'
 import { auth } from 'firebase-admin'
 import axios from 'axios'
@@ -40,6 +40,8 @@ export async function decodeToken(req: Request, res: Response, auth: auth.Auth) 
   }
 
   const idToken = authHeader.split('Bearer ')[1];
+  if (!idToken) return null;
+  
   try {
     await auth.verifyIdToken(idToken);
     return true;
@@ -76,13 +78,18 @@ export const authenticate = (req: Request, res: Response) => {
     res.redirect(`${authUrl}${params}`);
 }
 
-export const get_auth = async (req: Request, res: Response, auth: auth.Auth) => {
+export const getStatus = (auth: auth.Auth) => async (req: Request, res: Response) => {
     const auth_token = await decodeToken(req, res, auth);
 
     if (auth_token) {
-        res.status(200).json({
+      res.status(200).json({
         isAuthenticated: true,
         message: 'User is authenticated.'
+      });
+    } else {
+      res.status(401).json({
+        isAuthenticated: false,
+        message: 'User is not authenticated.'
       });
     }
 }
