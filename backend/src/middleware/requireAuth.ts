@@ -4,8 +4,8 @@ import * as auth from '../controllers/auth.contoller';
 
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const auth_token = await auth.decodeToken(req, res, admin.auth());
-    if (!auth_token) {
+    const result = await auth.verifyBearerToken(req, admin.auth());
+    if (!result.ok) {
       return res.status(401).send('Not authorized');
     }
 

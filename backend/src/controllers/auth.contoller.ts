@@ -32,22 +32,29 @@ interface UserResponse {
 
 const secrets = JSON.parse(process.env.SECRETS as string);
 
-export async function decodeToken(req: Request, res: Response, auth: auth.Auth) {
+export type BearerTokenResult =
+  | { ok: true }
+  | { ok: false; reason: 'missing' | 'invalid' };
+
+export async function verifyBearerToken(
+  req: Request,
+  firebaseAuth: auth.Auth
+): Promise<BearerTokenResult> {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ isAuthenticated: false, message: 'No authentication token provided.' });
-    return false;
+    return { ok: false, reason: 'missing' };
   }
 
   const idToken = authHeader.split('Bearer ')[1];
-  if (!idToken) return null;
-  
+  if (!idToken) {
+    return { ok: false, reason: 'missing' };
+  }
+
   try {
-    await auth.verifyIdToken(idToken);
-    return true;
-  } catch (err) {
-    res.status(401).json({ isAuthenticated: false, message: 'Invalid or expired authentication token.' });
-    return false;
+    await firebaseAuth.verifyIdToken(idToken);
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: 'invalid' };
   }
 }
 
@@ -78,20 +85,24 @@ export const authenticate = (req: Request, res: Response) => {
     res.redirect(`${authUrl}${params}`);
 }
 
-export const getStatus = (auth: auth.Auth) => async (req: Request, res: Response) => {
-    const auth_token = await decodeToken(req, res, auth);
+export const getStatus = (firebaseAuth: auth.Auth) => async (req: Request, res: Response) => {
+    const result = await verifyBearerToken(req, firebaseAuth);
 
-    if (auth_token) {
-      res.status(200).json({
+    if (result.ok) {
+      return res.status(200).json({
         isAuthenticated: true,
         message: 'User is authenticated.'
       });
-    } else {
-      res.status(401).json({
-        isAuthenticated: false,
-        message: 'User is not authenticated.'
-      });
     }
+
+    const message = result.reason === 'missing'
+      ? 'No authentication token provided.'
+      : 'Invalid or expired authentication token.';
+
+    return res.status(401).json({
+      isAuthenticated: false,
+      message
+    });
 }
 
 export const callback = async (req: Request, res: Response, auth: auth.Auth) => {
