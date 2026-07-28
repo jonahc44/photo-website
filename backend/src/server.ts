@@ -87,7 +87,8 @@ const PORT = process.env.PORT;
 const allowedOrigins = [
   'https://adobeid-na1.services.adobe.com',
   'https://auth.services.adobe.com',
-  'https://photo-admin-3b694.firebaseapp.com'
+  'https://photo-admin-3b694.firebaseapp.com',
+  'https://photo-admin-3b694.web.app'
 ];
 
 if (process.env.ENV === 'dev') {

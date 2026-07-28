@@ -3,7 +3,7 @@ import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
-export const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:5000";
+export const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:5000").replace(/\/+$/, '');
 
 const firebaseConfig = {
   apiKey: "AIzaSyAwQyjYTGJnhn54DS0_qEC9gZjWLtDnwIs",
