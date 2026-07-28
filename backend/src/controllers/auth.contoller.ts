@@ -180,9 +180,10 @@ export const callback = async (req: Request, res: Response, auth: auth.Auth) => 
         // res.header({ firebaseCustomToken });
       } catch (error: any) {
         console.error('Error minting Firebase custom token:', error.message);
+        res.status(500).send('Could not complete sign-in, please try again');
       }
     } catch (error: any) {
         console.error('Error getting tokens: ', error);
-        res.status(404).send('Error retrieving access token');
+        res.status(502).send('Error retrieving access token');
     }
 }

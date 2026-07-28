@@ -129,7 +129,16 @@ if (process.env.ENV == 'dev') {
 app.get('/auth', authController.authenticate);
 app.get('/auth/status', authController.getStatus(admin.auth()));
 app.get('/callback', async (req, res) => {
-  authController.callback(req, res, admin.auth());
+  // Awaited and caught: an unhandled rejection here terminates the process on
+  // Node 15+, so a bad response from Adobe would take the backend down.
+  try {
+    await authController.callback(req, res, admin.auth());
+  } catch (error) {
+    console.error('Unhandled error in Adobe callback:', error);
+    if (!res.headersSent) {
+      res.status(500).send('Sign-in failed, please try again');
+    }
+  }
 });
 
 const apiRouter = express.Router();

@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public site reads the bio and portrait; only a signed-in admin may edit
+    // them. Sign-in is custom-token only (minted in the Adobe OAuth callback
+    // after checking the Adobe sub against secrets.admin_id), so request.auth
+    // being non-null means the Adobe admin.
+  	match /about/bio {
+    	allow read: if true;
+    	allow write: if request.auth != null;
+    }
+    match /about/imageUrl {
+    	allow read: if true;
+    	allow write: if request.auth != null;
+    }
+    match /photo_metadata/albums {
+    	allow read: if true
+    }
+    match /photo_metadata/collections {
+    	allow read: if true
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
