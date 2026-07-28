@@ -37,46 +37,78 @@ export const createSession = async (apiToken: string, refreshToken: string, expi
     }
 }
 
-export const refreshApiToken = async () => {
-    const apiToken = await db.collection('tokens').doc('api_token').get();
-    const refreshToken = (await db.collection('tokens').doc('refresh_token').get()).get('value');
-    const expiryTime = apiToken.get('expiration');
-    const currTime = Timestamp.now();
+// Refresh this far ahead of the real expiry so a token can't lapse mid-request.
+const EXPIRY_MARGIN_MS = 60 * 1000;
 
-    if (currTime >= expiryTime) {
-        const secrets = JSON.parse(process.env.SECRETS as string);
-        const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
+// Adobe rotates the refresh token on every use, so two overlapping refreshes
+// race: the loser persists a refresh token Adobe has already invalidated and
+// the session is dead until the admin re-authenticates by hand. Collapse
+// concurrent refreshes onto one in-flight request.
+let inFlightRefresh: Promise<string> | null = null;
 
-        const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
-        const clientSecret = process.env.ENV === 'dev' ? secrets.dev_secret : secrets.adobe_secret;
-        const authString = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+const fetchNewToken = async (refreshToken: string): Promise<string> => {
+    const secrets = JSON.parse(process.env.SECRETS as string);
+    const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
 
-        console.log('Fetching new api token...');
-        await axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${refreshToken}`, {
-            headers: {
-                'Authorization': `Basic ${authString}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        }).then(response => {
-            const newAccess = response.data.access_token;
-            const newRefresh = response.data.refresh_token;
-            const newExpiry = response.data.expires_in;
+    const clientId = process.env.ENV === 'dev' ? secrets.dev_id : secrets.adobe_id;
+    const clientSecret = process.env.ENV === 'dev' ? secrets.dev_secret : secrets.adobe_secret;
+    const authString = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
-            db.collection('tokens').doc('api_token').update({
-                value: newAccess,
-                expiration: Timestamp.fromMillis(Date.now() + newExpiry * 1000)
-            });
+    console.log('Fetching new api token...');
+    const response = await axios.post<RefreshRes>(tokenUrl, `grant_type=refresh_token&refresh_token=${refreshToken}`, {
+        headers: {
+            'Authorization': `Basic ${authString}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    });
 
-            db.collection('tokens').doc('refresh_token').update({
-                value: newRefresh
-            })
+    const newAccess = response.data.access_token;
+    // Adobe does not always issue a new refresh token; keep the current one if so.
+    const newRefresh = response.data.refresh_token ?? refreshToken;
+    const newExpiry = response.data.expires_in;
+
+    // Awaited: callers read this token back, so the writes must land first.
+    await Promise.all([
+        db.collection('tokens').doc('api_token').update({
+            value: newAccess,
+            expiration: Timestamp.fromMillis(Date.now() + newExpiry * 1000)
+        }),
+        db.collection('tokens').doc('refresh_token').update({
+            value: newRefresh
         })
-    }
+    ]);
+
+    return newAccess;
 }
 
-export const apiToken = async () => {
-    await refreshApiToken();
+export const refreshApiToken = async (): Promise<string> => {
+    const [apiTokenDoc, refreshTokenDoc] = await Promise.all([
+        db.collection('tokens').doc('api_token').get(),
+        db.collection('tokens').doc('refresh_token').get()
+    ]);
 
-    const tokenInfo = await db.collection('tokens').doc('api_token').get();
-    return tokenInfo.get('value');
+    const expiryTime = apiTokenDoc.get('expiration') as Timestamp | undefined;
+    const currentToken = apiTokenDoc.get('value') as string | undefined;
+
+    if (currentToken && expiryTime && Date.now() + EXPIRY_MARGIN_MS < expiryTime.toMillis()) {
+        return currentToken;
+    }
+
+    const refreshToken = refreshTokenDoc.get('value') as string | undefined;
+    if (!refreshToken) {
+        throw new Error('No Adobe refresh token stored; admin must sign in again at /auth');
+    }
+
+    if (!inFlightRefresh) {
+        inFlightRefresh = fetchNewToken(refreshToken).finally(() => {
+            inFlightRefresh = null;
+        });
+    }
+
+    return inFlightRefresh;
+}
+
+// Returns a token guaranteed valid for at least EXPIRY_MARGIN_MS.
+export const apiToken = async (): Promise<string> => {
+    return refreshApiToken();
 }

@@ -11,5 +11,4 @@ photo_config.json
 photos
 serviceAccountKey.json
 secrets.json
-*.rules
 *.log

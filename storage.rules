@@ -1,0 +1,22 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Allow public read access to the photos directory
+    match /photos/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null; // Only logged-in admins can upload
+    }
+    
+    // Allow public read access to the thumbnails directory
+    match /thumbnails/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /{allPaths=**} {
+      // Allow access only if the user is signed in
+      allow read, write: if request.auth != null;
+    }
+  }
+}
