@@ -3,6 +3,7 @@ import { db } from '../server';
 import { getAlbums } from '../adobe_utils/GetAlbums';
 import { getAssets } from '../adobe_utils/GetAssets';
 import { fetchRenditions } from '../adobe_utils/GetRenditions';
+import { isAdobeAuthError } from '../adobe_utils/errors';
 
 export const getAlbumsForCollection = async (req: Request<{collectionId: string}>, res: Response) => {
   const token = res.locals.adobeToken;
@@ -39,6 +40,7 @@ export const getAlbumsForCollection = async (req: Request<{collectionId: string}
     console.log(`Successfully fetched albums for collection: ${collectionId}`);
     return res.status(200).json(albums);
   } catch (error) {
+    if (isAdobeAuthError(error)) throw error;
     console.error('Error fetching albums:', error);
     return res.status(500).send('Internal Server Error');
   }
@@ -98,6 +100,7 @@ export const associateAlbum = async (req: Request<{albumId: string;} & {collecti
     console.log('Successfully altered albums');
     return res.status(200).json(albums);
   } catch (error) {
+    if (isAdobeAuthError(error)) throw error;
     console.error('Unexpected error occurred when accessing albums metadata:', error);
     return res.status(500).send('Internal Server Error');
   }
@@ -124,6 +127,7 @@ export const getPhotos = async (req: Request<{collectionId: string;}>, res: Resp
     console.log(`Successfully fetched photos for collection: ${collectionId}`);
     return res.status(200).json(photoUrls);
   } catch (error) {
+    if (isAdobeAuthError(error)) throw error;
     console.error('Error fetching photos:', error);
     return res.status(500).send('Internal Server Error');
   }
@@ -159,6 +163,7 @@ export const getThumbnails = async (req: Request<{albumId: string;}>, res: Respo
     console.log(`Successfully fetched thumbnails for album: ${albumId}`);
     return res.status(200).json(urls);
   } catch (error) {
+    if (isAdobeAuthError(error)) throw error;
     console.error('Error fetching thumbnails:', error);
     return res.status(500).send('Internal Server Error');
   }

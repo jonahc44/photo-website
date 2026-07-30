@@ -2,6 +2,7 @@ import axios from 'axios'
 import dotenv from 'dotenv'
 import { getCatalog } from './GetCatalog'
 import { db, admin } from '../server'
+import { isAdobeAuthError } from './errors'
 dotenv.config();
 
 interface Album {
@@ -135,6 +136,9 @@ export const getAlbums = async (token: string) => {
         }
 
     } catch (err) {
+        // Don't hide an expired Adobe session behind stale album data - let the
+        // caller turn it into a 401 so the admin gets sent back to login.
+        if (isAdobeAuthError(err)) throw err;
         console.error("Error syncing albums:", err);
     }
 

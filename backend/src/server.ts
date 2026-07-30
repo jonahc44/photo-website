@@ -16,6 +16,7 @@ import * as adobeSession from './adobe_utils/SessionManager';
 import { AddressInfo } from 'net';
 import { FieldValue } from 'firebase-admin/firestore';
 import { requireAuth } from './middleware/requireAuth';
+import { errorHandler } from './middleware/errorHandler';
 import * as collectionController from './controllers/collection.controller';
 import * as albumController from './controllers/album.controller';
 
@@ -159,5 +160,7 @@ apiRouter.post('/refresh', async (req, res) => {
 });
 
 app.use('/api', apiRouter);
+
+app.use(errorHandler);
 
 export { db, admin };

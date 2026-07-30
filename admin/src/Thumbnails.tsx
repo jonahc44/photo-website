@@ -11,9 +11,8 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { auth } from '@/main'
+import { authFetch } from '@/auth'
 import { type Collection, fetchCollections } from '@/Collections'
-import { apiUrl } from './config'
 
 export type Photo = {
   thumbnail: string,
@@ -22,12 +21,7 @@ export type Photo = {
 }
 
 export const fetchThumbnails = async (album: string) => {
-    const idToken = await auth.currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/albums/${album}/thumbnails`, {
-       headers: {
-        'Authorization': `Bearer ${idToken}`
-      }
-    });
+    const response = await authFetch(`/api/albums/${album}/thumbnails`);
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
@@ -36,15 +30,8 @@ export const fetchThumbnails = async (album: string) => {
 }
 
 export const updateThumbnails = async (href: string) => {
-    const currentUser = auth.currentUser;
-    const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/collections/${href}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      },
+    const response = await authFetch(`/api/collections/${href}`, {
+      method: 'PATCH'
     });
 
     if (!response.ok) throw new Error('Failed to update collections');
@@ -53,15 +40,8 @@ export const updateThumbnails = async (href: string) => {
 
 export const reorderThumbnails = async (photos: Photo[], album: string) => {
     console.log('Reordering photos');
-    const currentUser = auth.currentUser;
-    const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/albums/${album}/reorder`, {
+    const response = await authFetch(`/api/albums/${album}/reorder`, {
       method: 'PATCH',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify(photos)
     });
 

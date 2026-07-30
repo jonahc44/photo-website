@@ -12,10 +12,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { auth } from '@/main'
+import { authFetch } from '@/auth'
 import Albums from './Albums'
 import Thumbnail from './Thumbnails'
-import { apiUrl } from './config'
 
 export interface Collection {
   name: string,
@@ -26,15 +25,8 @@ export interface Collection {
 }
 
 export const fetchCollections = async (home = false) => {
-    const currentUser = auth.currentUser;
-    const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/collections`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      }
+    const response = await authFetch(`/api/collections`, {
+      method: 'GET'
     });
 
     if (!response.ok) {
@@ -53,15 +45,8 @@ export const fetchCollections = async (home = false) => {
   }
 
 const reorderCollections = async (colls: Collection[]) => {
-    const currentUser = auth.currentUser;
-    const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/collections/reorder`, {
+    const response = await authFetch(`/api/collections/reorder`, {
       method: 'PATCH',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify(colls)
     });
 
@@ -70,15 +55,8 @@ const reorderCollections = async (colls: Collection[]) => {
   }
 
   const delCollection = async (href: string) => {
-    const currentUser = auth.currentUser;
-    const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/collections/${href}`, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      },
+    const response = await authFetch(`/api/collections/${href}`, {
+      method: 'DELETE'
     });
 
     if (!response.ok) throw new Error('Failed to delete collection');
@@ -86,15 +64,8 @@ const reorderCollections = async (colls: Collection[]) => {
 }
 
 const addCollection = async (href: string) => {
-    const currentUser = auth.currentUser;
-    const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/collections/${href}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      },
+    const response = await authFetch(`/api/collections/${href}`, {
+      method: 'POST'
     });
 
     if (!response.ok) throw new Error('Failed to update collections');
@@ -102,15 +73,8 @@ const addCollection = async (href: string) => {
 }
 
 const updateCollections = async (href: string) => {
-    const currentUser = auth.currentUser;
-    const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/collections/${href}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      },
+    const response = await authFetch(`/api/collections/${href}`, {
+      method: 'PATCH'
     });
 
     if (!response.ok) throw new Error('Failed to update collections');

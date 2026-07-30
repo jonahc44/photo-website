@@ -9,13 +9,19 @@ import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
 
 import { auth } from './config'
-import { onAuthStateChanged, type User } from 'firebase/auth'
+import { onAuthStateChanged } from 'firebase/auth'
+import { redirectToLogin } from './auth'
 
-const authInitializedPromise = new Promise<User | null>((resolve) => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    resolve(user); // Resolve the promise with the user object (or null)
-    unsubscribe(); // Unsubscribe after the first call
-  });
+// If the session goes stale while the app is open (signed out elsewhere, token
+// revoked), send the user to the login page instead of leaving them on a page
+// whose data can no longer load.
+let hadUser = false;
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    hadUser = true;
+  } else if (hadUser) {
+    redirectToLogin();
+  }
 });
 
 // Create a new router instance
@@ -50,5 +56,3 @@ if (rootElement && !rootElement.innerHTML) {
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals()
-
-export { auth, authInitializedPromise };

@@ -3,6 +3,7 @@ import dotenv from 'dotenv'
 import { db } from '../server'
 import { getCatalog } from './GetCatalog'
 import { admin } from '../server';
+import { isAdobeAuthError } from './errors'
 dotenv.config();
 
 interface Asset {
@@ -124,6 +125,9 @@ export const getAssets = async (token: string) => {
                     }
 
                 } catch (e) {
+                    // An expired Adobe session affects every album, so surface it
+                    // instead of quietly syncing nothing.
+                    if (isAdobeAuthError(e)) throw e;
                     console.error(`Failed to sync assets for ${albumKey}`, e);
                 }
             }

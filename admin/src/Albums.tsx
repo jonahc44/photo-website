@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { auth } from '@/main'
-import { apiUrl } from './config'
+import { authFetch } from '@/auth'
 
 export interface Album {
   id: string,
@@ -16,15 +15,8 @@ export interface Album {
 }
 
 export const fetchAlbums = async (activeColl: string) => {
-    const currentUser = auth.currentUser;
-    const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/albums/${activeColl}`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      }
+    const response = await authFetch(`/api/albums/${activeColl}`, {
+      method: 'GET'
     });
 
     if (!response.ok) {
@@ -44,15 +36,8 @@ export const fetchAlbums = async (activeColl: string) => {
 }
 
 export const updateAlbum = async (href: string) => {
-    const currentUser = auth.currentUser;
-    const idToken = await currentUser?.getIdToken(true);
-    const response = await fetch(`${apiUrl}/api/albums/${href}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      },
+    const response = await authFetch(`/api/albums/${href}`, {
+      method: 'PUT'
     });
 
     if (!response.ok) throw new Error('Failed to update album');

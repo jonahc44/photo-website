@@ -1,13 +1,13 @@
 import { createFileRoute, redirect, Link } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { auth, authInitializedPromise } from '@/main'
+import { auth } from '@/config'
+import { AuthError, authFetch, authInitializedPromise } from '@/auth'
 import { signInWithCustomToken, signOut } from 'firebase/auth'
 import Albums from '@/Albums'
 import Thumbnail from '@/Thumbnails'
 import Collections from '@/Collections'
 import About from '@/About'
-import { apiUrl } from '@/config'
 import { z } from 'zod'
 
 const searchSchema = z.object({
@@ -26,41 +26,30 @@ export const Route = createFileRoute('/')({
       try {
         await signInWithCustomToken(auth, customToken);
       } catch (err) {
-        console.log('Error when logging in with custom token');
+        console.log('Error when logging in with custom token: ', err);
       }
     }
 
     await authInitializedPromise;
 
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      console.log("No user signed in on the frontend. Skipping backend check.");
-       throw redirect({
-        to: '/login',
-        search: {
-          redirect: location.pathname
-        }
-      })
+    // Anything that stops us from confirming the session - no signed in user, an
+    // id token we can't refresh, a 401 from the backend - means the session is
+    // stale, so send the user to the login page instead of loading the page.
+    let authenticated = false;
+    try {
+      console.log('Fetching auth status...');
+      const response = await authFetch('/auth/status', { method: 'GET' });
+      const json = await response.json();
+      authenticated = Boolean(json.isAuthenticated);
+    } catch (err) {
+      if (err instanceof AuthError) {
+        console.log('Session is no longer valid: ', err.message);
+      } else {
+        console.error('Could not verify the session: ', err);
+      }
     }
 
-    const idToken = await currentUser?.getIdToken(true);
-    console.log('Fetching auth status...');
-
-    const status = await fetch(`${apiUrl}/auth/status`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(response => response.json())
-    .then(json => {
-      console.log(json);console.log('clicked');
-      return json.isAuthenticated;
-    });
-
-    if (!Boolean(status)) {
+    if (!authenticated) {
       throw redirect({
         to: '/login',
         search: {
@@ -101,15 +90,10 @@ function Index() {
     
     const refreshMutation = useMutation({
       mutationFn: async () => {
-        const token = await auth.currentUser?.getIdToken();
-        const response = await fetch(`${apiUrl}/api/refresh`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        const response = await authFetch('/api/refresh', {
+          method: 'POST'
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to refresh data');
         }
@@ -159,13 +143,6 @@ function Index() {
     } catch (err) {
       console.log('Error when deleting current user: ', err);
     }
-
-    redirect({
-      to: '/login',
-      search: {
-        redirect: location.pathname
-      }
-    });
   }
 
   const logoutButton = () => {
