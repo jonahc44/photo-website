@@ -15,7 +15,7 @@
   "dependencies": {
     "@google-cloud/datastore": "^10.0.1",
     "@google-cloud/firestore": "^8.3.0",
-    "@google-cloud/storage": "^7.16.0",
+    "@google-cloud/storage": "^9.0.0",
     "@types/axios": "^0.14.4",
     "@types/connect-sqlite3": "^0.9.5",
     "@types/cookie-parser": "^1.4.8",
@@ -38,7 +38,7 @@
     "express-session": "^1.18.1",
     "express-subdomain": "^1.0.6",
     "firebase": "^11.7.1",
-    "firebase-admin": "^13.7.0",
+    "firebase-admin": "^14.5.1",
     "firebase-functions": "^7.2.2",
     "firestore-store": "^2.0.2",
     "image-size": "^2.0.2",
